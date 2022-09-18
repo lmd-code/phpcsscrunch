@@ -2,7 +2,7 @@
 
 Take an array of source files and combine them into a single minified CSS file with an optional level of "crunch" (minification).
 
-## Usage
+## Installation / Usage
 
 ### 1. Download release
 
@@ -23,10 +23,11 @@ $crunch = new \lmdcode\lmdcrunchcss\LmdCrunchCss(
     ],
     '/full/path/to/css/output.min.css'
 );
-$crunch->process(3);
+$crunch->process(3); // see Methods below for explanation of arguments
 ```
 
 #### File Paths/Names
+
 - You must provide the full (absolute) server path to the source and output files, not the URIs.
 - Source files must be CSS files (no 'scss'/'sass' etc) and have a '.css' extension.
 - Output file must not start with a dot (".") and must have a '.css' extension.
@@ -45,29 +46,33 @@ You can link directly to the crunched/minified file in your HTML head section.
 
 Remember to remove the 'cruncher' code from the live version of your site.
 
-## Minification Options
+## Methods
 
-The `LmdCrunchCss::process()` method accepts three arguments.
+### process(*$strictness, $force = false, $nosave = false*)
 
-### `$strictness` (integer) - *required*
+This method processes the source files, but only if the most recently modified source file time is more recent than the last output saved (modified) time (or if `$force` is `true`, see method arguments below).
 
-There are three levels of strictness, from 1 to 3.
+The `process` method accepts three arguments.
 
-**1. Low** - only unnecessary/excess whitespace removed (blank lines, multiple spaces/tabs, empty rulesets etc).
+#### `$strictness` (*integer*) - optional
 
-**2. Medium** - most whitespace removed, but with each ruleset on a new line (including media queries/animation keyframes)
+There are three levels of strictness indicated by an integer (1-3):
 
-**3. High** - almost zero whitespace, with only neccessary whitespace remaining (e.g., between style values, such as margin declarations)
+**`1` (Low)** - only unnecessary/excess whitespace removed (blank lines, multiple spaces/tabs, empty rulesets etc).
 
-If any other integer is provided, it will default to `3` (high).
+**`2` (Medium)** - most whitespace removed, but with each ruleset on a new line (including media queries/animation keyframes)
 
-### `$force` (boolean) - optional
+**`3` (High)** - almost zero whitespace, with only necessary whitespace remaining (e.g., between style values, such as margin declarations)
 
-Force the recreation of the output CSS file, ignoring any modified dates. Useful for when you want to change the strictness level but havenvt modified any of the source files.
+If an integer other than 1-3 is provided, it will default to `3` (high).
+
+#### `$force` (*boolean*) - optional
+
+Force the recreation of the output CSS file, ignoring any modified dates. Useful for when you want to change the strictness level but haven't modified any of the source files.
 
 Defaults to `false`.
 
-### `$nosave` (boolean) - optional
+#### `$nosave` (*boolean*) - optional
 
 Outputs the processed CSS as a string without saving it to the output file. Useful for checking output with committing to it (or for inline CSS).
 
@@ -78,3 +83,36 @@ echo $crunch->process(3, false, true);
 ```
 
 Defaults to `false`.
+
+### minify(*$css, $strictness*)
+
+The minification method itself can be called statically, useful if you just want to crunch some inline CSS code.
+
+#### `$css` (*string*) - *required*
+
+The CSS content string itself, not a file reference.
+
+#### `$strictness` (*integer*) - *required*
+
+The strictness level of minification (see `process()` method above). If an integer other than 1-3 is provided, it will default to `3` (high).
+
+#### Example
+
+```php
+$css = "
+body {
+    background: black;
+    color: white;
+}
+p {
+    margin: 2rem 0;
+}
+";
+echo LmdCrunchCss::minify($css, 3);
+```
+
+Results in:
+
+```css
+body{background:black;color:white}p{margin:2rem 0}
+```
