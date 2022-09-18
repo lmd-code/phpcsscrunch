@@ -5,7 +5,7 @@
  * (c) LMD, 2022
  * https://github.com/lmd-code/lmdcrunchcss
  * 
- * @version 1.0.0
+ * @version 1.0.1
  */
 
 declare(strict_types=1);
@@ -21,23 +21,24 @@ namespace lmdcode\lmdcrunchcss;
  * Assumes that the source CSS is properly formatted.
  * 
  */
-class LmdCrunchCss {
-	/** @var string[] $srcFiles */
+class LmdCrunchCss
+{
+	/** @var string[] $srcFiles List of valid source CSS files (full paths) */
 	private $srcFiles = [];
 
-	/** @var string $outFile */
+	/** @var string $outFile Full path to valid output (crunched) CSS file */
 	private $outFile = '';
 
-	/** @var integer $mostRecentlyModified */
+	/** @var integer $mostRecentlyModified Modified time of the most recently modified source file */
 	private $mostRecentlyModified = 0;
 
-	/** @var integer $lastOutputSaved */
+	/** @var integer $lastOutputSaved Modified time of the output file (if it already exists) */
 	private $lastOutputSaved = 0;
 
-	/** @var boolean $hasError */
+	/** @var boolean $hasError An error was found */
 	private $hasError = false;
 
-	/** @var array $validMimetypes */
+	/** @var array $validMimetypes Valid mime-types for source CSS files */
 	private static $validMimetypes = [
 		'text/css',
 		'text/plain'
@@ -55,10 +56,11 @@ class LmdCrunchCss {
 	/**
 	 * Constructor
 	 * 
-	 * @param array $srcFiles Full path to original CSS source files (must have '.css' extension)
-	 * @param string $outFile Full path for processed CSS output file
+	 * @param array $srcFiles Full paths to CSS source files (must have '.css' extension)
+	 * @param string $outFile Full path for processed CSS output file (must have '.css' extension)
 	 */
-	function __construct($srcFiles, $outFile) {
+	function __construct(array $srcFiles, string $outFile)
+	{
 		try {
 			// Source Files
 			if (!is_array($srcFiles) || count($srcFiles) < 1) {
@@ -162,7 +164,8 @@ class LmdCrunchCss {
 	 * 
 	 * @return string|bool
 	 */
-	public function process($strictness = 0, $force = false, $nosave = false) {
+	public function process(int $strictness, bool $force = false, bool $nosave = false)
+	{
 		if (!$this->hasError && ($force || $this->mostRecentlyModified > $this->lastOutputSaved)) {
 
 			// Minification strictness (max is 3, but it doesn't really matter if above 3)
@@ -207,7 +210,8 @@ class LmdCrunchCss {
 	 *
 	 * @return string
 	 */
-	public static function minify($css, $strictness) {
+	public static function minify(string $css, int $strictness): string
+	{
 		// Variable spaces - only include when strictness is low
 		$vs = $strictness > self::MINIFY_STRICTNESS_LOW ? '' : ' ';
 
@@ -235,20 +239,21 @@ class LmdCrunchCss {
 
 		/*** Iterate over CSS as an array */
 		$lines = explode("\n", trim($css));
-		$depth = 0;
-
-		$css= ""; // reset CSS
+		
+		$depth = 0; // nested ruleset depth counter
+		$css = ""; // reset CSS string
+		
 		foreach ($lines as $line) {
 			$line = trim($line);
-			$line_beg = substr($line, 0, 1);
-			$line_end = substr($line, -1, 1);
+			$line_beg = substr($line, 0, 1); // first character
+			$line_end = substr($line, -1, 1); // last character
 
-			// If the line starts with a closing brace, exiting nested ruleset
+			// If the line starts with a closing brace, we are exiting a nested ruleset
 			if ($line_beg === "}") {
 				$depth--;
 			}
 
-			// Indent string depending on nested ruleset depth
+			// Indent string content depends on nested ruleset depth
 			$indent = str_repeat("\t", $depth);
 
 			// Insert indent at medium/low strictness only
@@ -305,7 +310,8 @@ class LmdCrunchCss {
 	 *
 	 * @return string
 	 */
-	private function openSourceFile($file) {
+	private function openSourceFile(string $file): string
+	{
 		try {
 			if (!$css = @file_get_contents($file)) {
 				throw new \Exception('Could not open the source CSS file. ' . $file);
@@ -323,7 +329,8 @@ class LmdCrunchCss {
 	 *
 	 * @return void
 	 */
-	private function saveOutputFile($css) {
+	private function saveOutputFile(string $css): void
+	{
 		try {
 			if (!@file_put_contents($this->outFile, $css)) {
 				throw new \Exception('Could not save the output CSS file.');
@@ -337,22 +344,26 @@ class LmdCrunchCss {
 	 * Normalise path separators - make back slashes into forward slashes
 	 *
 	 * @param string $path The path to normalise.
-	 * @param boolean $trailingSlash Add a trailing slash (for directories)
+	 * @param boolean $trailingSlash Add a trailing slash for directories (default: false)
 	 *
 	 * @return string
 	 */
-	private static function normalisePath($path, $trailingSlash = false) {
+	private static function normalisePath(string $path, bool $trailingSlash = false): string
+	{
 		return str_replace('\\', '/', rtrim($path, '/\\')) . ($trailingSlash ? '/' : '');
 	}
 
 	/**
 	 * Custom error output
+	 * 
+	 * Outputs directly to screen.
 	 *
 	 * @param string $msg The error message
 	 *
 	 * @return void
 	 */
-	private static function error($msg) {
+	private static function error($msg): void
+	{
 		echo '<p><strong>' . __CLASS__ . ' Error:</strong> ' . $msg . '</p>';
 	}
 }
