@@ -5,7 +5,7 @@
  * (c) LMD, 2022
  * https://github.com/lmd-code/lmdcrunchcss
  * 
- * @version 1.0.1
+ * @version 1.1.0
  */
 
 declare(strict_types=1);
