@@ -157,22 +157,39 @@ class LmdCrunchCss
 
 	/**
 	 * Process CSS source files
-	 *
-	 * @param int $strictness strictness of minification (1 = low, 2 = medium, 3 = high)
-	 * @param bool $force Force recreation of output, ignoring modified dates
-	 * @param bool $nosave Outputs processed CSS as a string, does not save to a file
 	 * 
+	 * Only processes files if the most recently modified source file time is more recent than 
+	 * the last output saved (modified) time, or if `$force` is `true`.
+	 * 
+	 * It saves the result to the output file or returns the processed string for direct output 
+	 * according to `$nosave`.
+	 * 
+	 * @param int $strictness Strictness of minification (default: 3).
+	 * 
+	 * Strictness Levels
+	 * - 1 (Low) - only unnecessary/excess whitespace removed (blank lines, multiple spaces/tabs,
+	 *       empty rulesets etc).
+	 * - 2 (Medium) - most whitespace removed, but with each ruleset on a new line (including 
+	 *       media queries/animation keyframes)
+	 * - 3 (High) - almost zero whitespace, with only necessary whitespace remaining 
+	 *       (e.g., between style values, such as margin declarations)
+	 * 
+	 * If an integer other than 1-3 is provided, it will default to `3` (high).
+	 * 
+	 * @param bool $force Force recreation of output (default: false). Set to `true` to force the 
+	 * recreation of the output CSS file, ignoring any modified dates. Useful for when you want to 
+	 * change the strictness level but haven'v't modified any of the source files.
+	 * 
+	 * @param bool $nosave Outputs processed CSS as a string (default: false). Set to `true` to 
+	 * output the processed CSS as a string without saving it to the output file. Useful for 
+	 * checking output with committing to it (or for inline CSS). When enabling this option, 
+	 * you need to echo/print the results. E.g. `echo $crunch->process(3, false, true);`
+	 *
 	 * @return string|bool
 	 */
-	public function process(int $strictness, bool $force = false, bool $nosave = false)
+	public function process(int $strictness = 3, bool $force = false, bool $nosave = false)
 	{
 		if (!$this->hasError && ($force || $this->mostRecentlyModified > $this->lastOutputSaved)) {
-
-			// Minification strictness (max is 3, but it doesn't really matter if above 3)
-			if (!is_int($strictness) || $strictness < 1) {
-				$strictness = self::MINIFY_STRICTNESS_HIGH; // use default
-			}
-
 			$mungedCSS = "";
 			foreach ($this->srcFiles as $srcFile) {
 				$srcCSS = $this->openSourceFile($srcFile);
@@ -197,21 +214,20 @@ class LmdCrunchCss
 	/**
 	 * Minify CSS source
 	 * 
-	 * Strictness Levels
-	 * - 1 - Low - only unnecessary/excess whitespace removed (blank lines, multiple spaces/tabs,
-	 *       empty rulesets etc).
-	 * - 2 - Medium - most whitespace removed, but with each ruleset on a new line (including 
-	 *       media queries/animation keyframes)
-	 * - 3 - High - almost zero whitespace, with only neccessary whitespace remaining 
-	 *       (e.g., between style values, such as margin declarations)
+	 * For explanation of strictness levels @see `process()` method.
 	 * 
 	 * @param string $css CSS source to minify
-	 * @param int $strictness strictness level of minification
+	 * @param int $strictness strictness level of minification (defaults to 3)
 	 *
 	 * @return string
 	 */
 	public static function minify(string $css, int $strictness): string
 	{
+		// Enforce valid minification strictness (min = 1, max = 3)
+		if (!is_int($strictness) || $strictness < self::MINIFY_STRICTNESS_LOW || $strictness > self::MINIFY_STRICTNESS_HIGH) {
+			$strictness = self::MINIFY_STRICTNESS_HIGH; // use default
+		}
+
 		// Variable spaces - only include when strictness is low
 		$vs = $strictness > self::MINIFY_STRICTNESS_LOW ? '' : ' ';
 
