@@ -17,7 +17,7 @@ Steps to reproduce the behavior, or in this case where and how you were using th
 A clear and concise description of what you expected to happen.
 
 **Possible fix (optional)**
-Your suggestiin for a pososble fix.
+Your suggestion for a possible fix.
 
 **Setup/Environent:**
 - LmdCrunchCss release:
