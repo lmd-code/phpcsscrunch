@@ -29,7 +29,8 @@ $crunch->process(3); // see Methods below for explanation of arguments
 #### File Paths/Names
 
 - You must provide the full (absolute) server path to the source and output files, not the URIs.
-- Source files must be CSS files (no 'scss'/'sass' etc) and have a '.css' extension.
+- Source files must be standard CSS files (no SCSS/SASS/LESS etc) and have a '.css' extension.
+- Source files must be properly formatted CSS (any formatting errors may cause issues).
 - Output file must not start with a dot (".") and must have a '.css' extension.
 - Output file *does not need* to exist yet (it will be created if the output directory is writable).
 - The output directory path must exist (and be writable), you will need to create it manually if it does not.
