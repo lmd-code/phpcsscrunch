@@ -26,6 +26,8 @@ $crunch = new \lmdcode\lmdcrunchcss\LmdCrunchCss(
 $crunch->process(3); // see Methods below for explanation of arguments
 ```
 
+**Important:** the order in which you add source files to the array will be the order in which they are added to the output file, so keep the *cascade* in mind!
+
 #### File Paths/Names
 
 - You must provide the full (absolute) server path to the source and output files, not the URIs.
