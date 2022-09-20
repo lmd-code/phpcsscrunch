@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+- Changed: Strictness level constant names changed from `MINIFY_STRICTNESS_*` to `MINIFY_LEVEL_*`
+- Added: Strictness level 0 (none) `MINIFY_LEVEL_NONE`, which combines source files without minfication.
+- Changed: `Method::process()`/`Method::minify()` now default to `MINIFY_LEVEL_NONE` (breaking change from v1.* releases).
+
 ## [1.1.1] - 22-09-20
 
 ### Added

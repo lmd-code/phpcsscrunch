@@ -5,7 +5,7 @@
  * (c) LMD, 2022
  * https://github.com/lmd-code/lmdcrunchcss
  * 
- * @version 1.1.1
+ * @version 2.0.0
  */
 
 declare(strict_types=1);
@@ -29,13 +29,13 @@ class LmdCrunchCss
 	/** @var string $outFile Full path to valid output (crunched) CSS file */
 	private $outFile = '';
 
-	/** @var integer $mostRecentlyModified Modified time of the most recently modified source file */
+	/** @var integer $mostRecentlyModified Modified time of most recently modified source file */
 	private $mostRecentlyModified = 0;
 
-	/** @var integer $lastOutputSaved Modified time of the output file (if it already exists) */
+	/** @var integer $lastOutputSaved Modified time of output file (if it exists) */
 	private $lastOutputSaved = 0;
 
-	/** @var boolean $hasError An error was found */
+	/** @var boolean $hasError An error occured */
 	private $hasError = false;
 
 	/** @var array $validMimetypes Valid mime-types for source CSS files */
@@ -44,14 +44,25 @@ class LmdCrunchCss
 		'text/plain'
 	];
 
+	/** @var int No minification (only combines source files) */
+	const MINIFY_LEVEL_NONE = 0;
+
 	/** @var int Low level minification (only excess whitespace removed) */
-	const MINIFY_STRICTNESS_LOW = 1;
+	const MINIFY_LEVEL_LOW = 1;
 
 	/** @var int Medium level minification (most whitespace removed) */
-	const MINIFY_STRICTNESS_MEDIUM = 2;
+	const MINIFY_LEVEL_MEDIUM = 2;
 
 	/** @var int Highest level of minification (almost zero whitespace) */
-	const MINIFY_STRICTNESS_HIGH = 3;
+	const MINIFY_LEVEL_HIGH = 3;
+
+	/** @var array $filterOpts Options for validating strictness values */
+	private static $filterOpts = [
+		'options' => [
+			'min_range' => self::MINIFY_LEVEL_NONE,
+			'max_range' => self::MINIFY_LEVEL_HIGH
+		]
+	];
 
 	/**
 	 * Constructor
@@ -132,7 +143,7 @@ class LmdCrunchCss
 			// Trim output file name
 			$outFileName = isset($pathInfo['filename']) ? trim($pathInfo['filename']) : '';
 
-			// Output file name is required and must be valid format
+			// Output file name is required and must be a valid format
 			if ($outFileName === '' || substr($outFileName, 0, 1) === '.') {
 				throw new \Exception('No output file name was provided or is it invalid (name must not start with a dot ".")');
 			}
@@ -164,17 +175,18 @@ class LmdCrunchCss
 	 * It saves the result to the output file or returns the processed string for direct output 
 	 * according to `$nosave`.
 	 * 
-	 * @param int $strictness Strictness of minification (default: 3).
+	 * @param int $strictness Strictness level of minification (default: 0/none).
 	 * 
 	 * Strictness Levels
+	 * - 0 (None) - combines multiple source files into one without any minification.
 	 * - 1 (Low) - only unnecessary/excess whitespace removed (blank lines, multiple spaces/tabs,
 	 *       empty rulesets etc).
 	 * - 2 (Medium) - most whitespace removed, but with each ruleset on a new line (including 
-	 *       media queries/animation keyframes)
+	 *       media queries/animation keyframes).
 	 * - 3 (High) - almost zero whitespace, with only necessary whitespace remaining 
-	 *       (e.g., between style values, such as margin declarations)
+	 *       (e.g., between style values, such as margin declarations).
 	 * 
-	 * If an integer other than 1-3 is provided, it will default to `3` (high).
+	 * If an integer other than 0-3 is provided, it will default to `0` none).
 	 * 
 	 * @param bool $force Force recreation of output (default: false). Set to `true` to force the 
 	 * recreation of the output CSS file, ignoring any modified dates. Useful for when you want to 
@@ -187,27 +199,34 @@ class LmdCrunchCss
 	 *
 	 * @return string|bool
 	 */
-	public function process(int $strictness = 3, bool $force = false, bool $nosave = false)
+	public function process(int $strictness = 0, bool $force = false, bool $nosave = false)
 	{
+		// Enforce valid minification strictness level
+		if (filter_var($strictness, FILTER_VALIDATE_INT, self::$filterOpts) === false) {
+			$strictness = self::MINIFY_LEVEL_NONE; // default
+		}
+
 		if (!$this->hasError && ($force || $this->mostRecentlyModified > $this->lastOutputSaved)) {
-			$mungedCSS = "";
+			$combinedCSS = "";
+
 			foreach ($this->srcFiles as $srcFile) {
 				$srcCSS = $this->openSourceFile($srcFile);
-				$mungedCSS .= trim($srcCSS) . "\n";
+				$combinedCSS .= trim($srcCSS) . "\n\n";
 			}
 
-			$mungedCSS = self::minify($mungedCSS, $strictness);
+			$combinedCSS = self::minify($combinedCSS, $strictness);
 
 			// return string output if $nosave is true
 			if ($nosave) {
-				return $mungedCSS;
+				return $combinedCSS;
 			}
 
 			// No debug, save output to file
-			$this->saveOutputFile($mungedCSS); // save to file
+			$this->saveOutputFile($combinedCSS); // save to file
 
 			return true;
 		}
+
 		return false;
 	}
 
@@ -217,19 +236,22 @@ class LmdCrunchCss
 	 * For explanation of strictness levels @see `process()` method.
 	 * 
 	 * @param string $css CSS source to minify
-	 * @param int $strictness strictness level of minification (defaults to 3)
+	 * @param int $strictness strictness level of minification
 	 *
 	 * @return string
 	 */
 	public static function minify(string $css, int $strictness): string
 	{
-		// Enforce valid minification strictness (min = 1, max = 3)
-		if (!is_int($strictness) || $strictness < self::MINIFY_STRICTNESS_LOW || $strictness > self::MINIFY_STRICTNESS_HIGH) {
-			$strictness = self::MINIFY_STRICTNESS_HIGH; // use default
+		// Validate strictness - if arg is invalid or MINIFY_LEVEL_NONE, return original string
+		if (
+			filter_var($strictness, FILTER_VALIDATE_INT, self::$filterOpts) === false
+			|| $strictness === self::MINIFY_LEVEL_NONE
+		) {
+			return $css;
 		}
 
 		// Variable spaces - only include when strictness is low
-		$vs = $strictness > self::MINIFY_STRICTNESS_LOW ? '' : ' ';
+		$vs = $strictness > self::MINIFY_LEVEL_LOW ? '' : ' ';
 
 		// All
 		$css = preg_replace("/\/\*.*?\*\//s", "", $css); // strip comments
@@ -238,7 +260,7 @@ class LmdCrunchCss
 		$css = preg_replace("/\h+/s", " ", $css); // reduce/normalise horizontal whitespace
 		$css = preg_replace("/ ?(\{|\}|;) ?/s", "\\1", $css); // strip whitespace around braces and semi-colons
 
-		if ($strictness > self::MINIFY_STRICTNESS_LOW) {
+		if ($strictness > self::MINIFY_LEVEL_LOW) {
 			$css = str_replace(";}", "}", $css); // strip semi-colon from before closing brace
 		} else {
 			$css = preg_replace("/(?<!;|\})\}/s", ";}", $css); // insert missing semi-colon before closing brace
@@ -273,7 +295,7 @@ class LmdCrunchCss
 			$indent = str_repeat("\t", $depth);
 
 			// Insert indent at medium/low strictness only
-			$css .= ($strictness < self::MINIFY_STRICTNESS_HIGH) ? $indent : "";
+			$css .= ($strictness < self::MINIFY_LEVEL_HIGH) ? $indent : "";
 
 			if ($line_end === ";" || $line_beg === "}") {
 				// self-contained line (e.g. @import) or closing brace
@@ -292,7 +314,7 @@ class LmdCrunchCss
 				// self-contained ruleset
 
 				// Newline/indent ruleset declarations
-				$indent_dec = ($strictness < self::MINIFY_STRICTNESS_MEDIUM) ? "\n" . str_repeat("\t", $depth+1) : "";
+				$indent_dec = ($strictness < self::MINIFY_LEVEL_MEDIUM) ? "\n" . str_repeat("\t", $depth+1) : "";
 
 				// Get separate parts (selectors {declarations}), minus braces
 				preg_match("/^(?<sels>[^{]+)\{(?<decs>[^}]+)\}$/", $line, $matches);
@@ -308,12 +330,12 @@ class LmdCrunchCss
 
 				// Build ruleset
 				$css .= trim($sels) . $vs . "{" . $indent_dec . trim($decs)
-				. (($strictness < self::MINIFY_STRICTNESS_MEDIUM) ? "\n" . $indent : "")
+				. (($strictness < self::MINIFY_LEVEL_MEDIUM) ? "\n" . $indent : "")
 				. "}";
 			}
 
 			// Insert newline at medium/low strictness only
-			$css .= ($strictness < self::MINIFY_STRICTNESS_HIGH) ? "\n" : "";
+			$css .= ($strictness < self::MINIFY_LEVEL_HIGH) ? "\n" : "";
 		}
 
 		return trim($css);

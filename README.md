@@ -51,7 +51,7 @@ Remember to remove the 'cruncher' code from the live version of your site.
 
 ## Methods
 
-### process(*$strictness, $force = false, $nosave = false*)
+### process(*$strictness = 0, $force = false, $nosave = false*)
 
 This method processes the source files, but only if the most recently modified source file time is more recent than the last output saved (modified) time (or if `$force` is `true`, see method arguments below).
 
@@ -59,7 +59,9 @@ The `process` method accepts three arguments.
 
 #### `$strictness` (*integer*) - optional
 
-There are three levels of strictness indicated by an integer (1-3):
+The levels of strictness are indicated by an integer (0-3):
+
+**`0` (None)** - combines multiple source files into one without any minification. **Default**
 
 **`1` (Low)** - only unnecessary/excess whitespace removed (blank lines, multiple spaces/tabs, empty rulesets etc).
 
@@ -67,7 +69,7 @@ There are three levels of strictness indicated by an integer (1-3):
 
 **`3` (High)** - almost zero whitespace, with only necessary whitespace remaining (e.g., between style values, such as margin declarations)
 
-If an integer other than 1-3 is provided, it will default to `3` (high).
+If an integer other than 0-3 is provided, it will default to `0` (none).
 
 #### `$force` (*boolean*) - optional
 
@@ -97,7 +99,7 @@ The CSS content string itself, not a file reference.
 
 #### `$strictness` (*integer*) - *required*
 
-The strictness level of minification (see `process()` method above). If an integer other than 1-3 is provided, it will default to `3` (high).
+The strictness level of minification (see `process()` method above). If an integer other than 0-3 is provided, it will default to `0` (none).
 
 #### Example
 
