@@ -3,3 +3,7 @@
 .gitattributes export-ignore
 .gitignore     export-ignore
 .gitkeep       export-ignore
+
+# Exclude from diffs
+CHANGELOG.md linguist-generated
+*.css linguist-generated

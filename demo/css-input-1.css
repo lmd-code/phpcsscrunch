@@ -1,0 +1,27 @@
+/** CSS Input 1 */
+html
+{
+	line-height: 1.4;
+	font-size: 16px;
+	font-size-adjust: 0.5;
+	font-weight: 400;
+	text-size-adjust: none;
+}
+
+body
+{
+    background-color: #fff;
+    color: #000;
+    font-size: 1rem;
+}
+
+h1
+{
+    margin: 1rem 0 0.5rem 0;
+    font-size: 2em;
+}
+
+p
+{
+    margin: 1rem 0;
+}

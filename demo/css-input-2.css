@@ -1,0 +1,31 @@
+/** CSS Input 2 */
+.container
+{
+    width: 100%;
+    margin: 1rem 0;
+}
+.item
+{
+    margin:1rem auto;
+}
+
+a
+{
+    color: #00f;
+}
+
+a:hover,
+a:focus
+{
+    color: #f0f;
+}
+
+a:active
+{
+    color: #f00;
+}
+
+a:visited
+{
+    color: rgb(109, 109, 255);
+}

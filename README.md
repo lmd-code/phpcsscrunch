@@ -119,3 +119,7 @@ Results in:
 ```css
 body{background:black;color:white}p{margin:2rem 0}
 ```
+
+## Demo
+
+A demonstration (with code) is provided in the `demo` folder, which can be run once LMD Crunch CSS is installed.
