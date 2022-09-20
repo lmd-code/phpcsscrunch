@@ -25,8 +25,8 @@ $crunch = new LmdCrunchCss($sourceFiles,  $dir . '/css-output.min.css');
 // Save output to file with default strictness (3)
 //$crunch->process();
 
-// Get returned string with minimum strictness, without saving to file
-$css = $crunch->process(1, false, true);
+// Get returned string with level 0 strictness (no minification), without saving to file
+$css = $crunch->process(0, false, true);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -40,10 +40,15 @@ $css = $crunch->process(1, false, true);
 <div class="wrapper">
     <h1>LMD Crunch CSS Demo</h1>
 
-    <h2><code>$strictness = 1</code></h2>
-    <p><textarea id="cssout1" cols="80" rows="15"><?=$css?></textarea></p>
+    <!-- The combined output without any minification applied -->
 
-    <!-- For the next two examples, we are statically calling the minify method directly on the already partially crunched output -->
+    <h2><code>$strictness = 0</code></h2>
+    <p><textarea id="cssout0" cols="80" rows="15"><?=$css?></textarea></p>
+
+    <!-- For the following examples, we are statically calling the minify method directly on the already combined output -->
+
+    <h2><code>$strictness = 1</code></h2>
+    <p><textarea id="cssout1" cols="80" rows="15"><?=LmdCrunchCss::minify($css, 1)?></textarea></p>
 
     <h2><code>$strictness = 2</code></h2>
     <p><textarea id="cssout2" cols="80" rows="15"><?=LmdCrunchCss::minify($css, 2)?></textarea></p>
