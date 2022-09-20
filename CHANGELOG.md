@@ -6,6 +6,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+## [1.1.1] - 22-09-20
+
+### Added
+
+- Demo code in `demo` folder.
+
+### Changed
+
+- Fixes and minor updates to README
+
 ## [1.1.0] - 22-09-18
 
 ### Added
