@@ -19,6 +19,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Added: Property `$rawCss` to store the source CSS, enabling output of multple different minified versions of the same source without having to read the files every time.
 - Added: Property `$lastStrictness` to store the last applied strictness level, enabling the same minified source to be requested in different formats (e.g. as a string and a file) without needing to minify again.
 - Added: The minification strictness level is appended as a comment to the end of `minify()` output and is used to determine previous minification level when reading an already saved output file.
+- Changed: References, parameters and variables referring to "strictness" (`$strictness`) changed to "minification level" (`$level`).
 
 ## [1.1.1] - 22-09-20
 

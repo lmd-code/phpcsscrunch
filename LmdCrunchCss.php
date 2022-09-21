@@ -16,10 +16,9 @@ namespace lmdcode\lmdcrunchcss;
  * LMD Crunch CSS
  * 
  * Take an array of source files and combine them into a single minified CSS file with an 
- * optional level of "crunch" (minification).
+ * optional minification level.
  * 
- * Assumes that the source CSS is properly formatted.
- * 
+ * The source CSS must be properly formatted.
  */
 class LmdCrunchCss
 {
@@ -41,7 +40,7 @@ class LmdCrunchCss
 	/** @var string[] $srcFiles List of valid source CSS files (full paths) */
 	private $srcFiles = [];
 
-	/** @var string $outFile Full path to valid output (crunched) CSS file */
+	/** @var string $outFile Full path to valid output (minified) CSS file */
 	private $outFile = '';
 
 	/** @var boolean $outFileExists The specified output file already exists/is created */
@@ -62,8 +61,8 @@ class LmdCrunchCss
 	/** @var bool $updatedCss Source file CSS was updated (modified more recently than output) */
 	private $updatedCss = false;
 
-	/** @var int $lastStrictness The last minification strictness level applied */
-	private $lastStrictness = -1; // -1 if not yet applied to allow for level 0
+	/** @var int $lastMinify The last minification level applied */
+	private $lastMinify = -1; // -1 if not yet applied to allow for level 0
 
 	/** @var array $validMimetypes Valid mime-types for source CSS files */
 	private static $validMimetypes = [
@@ -71,7 +70,7 @@ class LmdCrunchCss
 		'text/plain'
 	];
 
-	/** @var array $filterOpts Options for validating strictness values */
+	/** @var array $filterOpts Options for validating minification level */
 	private static $filterOpts = [
 		'options' => [
 			'min_range' => self::MINIFY_LEVEL_NONE,
@@ -81,6 +80,21 @@ class LmdCrunchCss
 
 	/**
 	 * Constructor
+	 * 
+	 * File Paths/Names
+	 * - You must provide the full (absolute) server path to the source and output files, 
+	 *   not the URIs.
+	 * - Source files must be standard CSS files (no SCSS/SASS/LESS etc) and have a '.css' 
+	 *   extension.
+	 * - Source files must be properly formatted CSS (any formatting errors may cause issues).
+	 * - Output file must not start with a dot (".") and must have a '.css' extension.
+	 * - Output file *does not need* to exist yet (it will be created if the output directory 
+	 *   is writable).
+	 * - The output directory path must exist (and be writable), you will need to create it 
+	 *   manually if it does not.
+	 * 
+	 * **Important:** the order in which you add source files to the array will be the order 
+	 * in which they are added to the output file, so keep the *cascade* in mind!
 	 * 
 	 * @param array $srcFiles Full paths to CSS source files (must have '.css' extension)
 	 * @param string $outFile Full path for processed CSS output file (must have '.css' extension)
@@ -185,14 +199,14 @@ class LmdCrunchCss
 	 * Process CSS source files
 	 * 
 	 * Only processes files if:
-	 * - They have not yet been processed, or the most recently modified source file time is more 
-	 *   recent than the last output saved (modified) time.
-	 * - If the requested minification strictness level is different to the last applied level.
+	 * - No source files have been processed and no output file has been saved.
+	 * - The most recently modified source file is fresher than the saved output file.
+	 * - If `$level` is different to the last applied minification level.
 	 * - If `$force` is `true`.
 	 * 
-	 * @param int $strictness Strictness level of minification (default: 0/none).
+	 * @param int $level Minification level, none (0) to high (3) (default: 0).
 	 * 
-	 * Strictness Levels
+	 * Minification Levels
 	 * - 0 (None) - combines multiple source files into one without any minification.
 	 * - 1 (Low) - only unnecessary/excess whitespace removed (blank lines, multiple spaces/tabs,
 	 *       empty rulesets etc).
@@ -203,15 +217,14 @@ class LmdCrunchCss
 	 * 
 	 * If an integer other than 0-3 is provided, it will default to `0` none).
 	 * 
-	 * @param bool $force Force recreation of output (default: false). Set to `true` to force the 
-	 * recreation of the output CSS file, ignoring any modified dates. Useful for when you want to 
-	 * change the strictness level but haven'v't modified any of the source files.
+	 * @param bool $force Force the recreation of minified CSS output from the source files even 
+	 * when it would not otherwise.
 	 * 
 	 * @param bool $noSave Deprecated and will be removed in a future release.
 	 *
 	 * @return self
 	 */
-	public function process(int $strictness = 0, bool $force = false, bool $noSave = false): self
+	public function process(int $level = 0, bool $force = false, bool $noSave = false): self
 	{
 		// The $noSave param is deprecated, show error notice to user
 		if (func_num_args() > 2) {
@@ -219,9 +232,9 @@ class LmdCrunchCss
 		}
 
 		if (!$this->hasError) {
-			// Enforce valid minification strictness level
-			if (filter_var($strictness, FILTER_VALIDATE_INT, self::$filterOpts) === false) {
-				$strictness = self::MINIFY_LEVEL_NONE; // default
+			// Enforce valid minification level
+			if (filter_var($level, FILTER_VALIDATE_INT, self::$filterOpts) === false) {
+				$level = self::MINIFY_LEVEL_NONE; // default
 			}
 
 			// Get output CSS content if it exists and is more recent than the source files.
@@ -229,14 +242,14 @@ class LmdCrunchCss
 			// before a call to process() -- e.g. for output at different minification levels.
 			if ($this->outFileExists && $this->outLastModified > $this->srcLastModified) {
 				$this->outCss = $this->readFile($this->outFile);
-				// Get strictness level from file (last line comment)
+				// Get minification level from file (last line comment)
 				if (preg_match('/\/\*(?<level>\d)\*\/$/', $this->outCss, $match) === 1) {
-					$this->lastStrictness = intval($match['level']);
+					$this->lastMinify = intval($match['level']);
 				}
 			}
 
 			// Determine whether to run the minification process
-			if ($force || $this->outCss === '' || $strictness !== $this->lastStrictness) {
+			if ($force || $this->outCss === '' || $level !== $this->lastMinify) {
 				// We only need to read the source files if we haven't already done so
 				if ($this->rawCss === '') {
 					$combinedCSS = "";
@@ -247,12 +260,12 @@ class LmdCrunchCss
 					$this->rawCss = $combinedCSS;
 				}
 
-				$this->outCss = self::minify($this->rawCss, $strictness);
+				$this->outCss = self::minify($this->rawCss, $level);
 				$this->updatedCss = true;
 			}
 		}
 
-		$this->lastStrictness = $strictness;
+		$this->lastMinify = $level;
 
 		return $this;
 	}
@@ -293,34 +306,32 @@ class LmdCrunchCss
 	/**
 	 * Minify CSS source
 	 * 
-	 * For explanation of strictness levels @see `process()` method.
-	 * 
 	 * @param string $css CSS source to minify
-	 * @param int $strictness strictness level of minification
+	 * @param int $level Minificaiton level  (@see `process()` method)
 	 *
 	 * @return string
 	 */
-	public static function minify(string $css, int $strictness): string
+	public static function minify(string $css, int $level): string
 	{
-		// Validate strictness - if arg is invalid or MINIFY_LEVEL_NONE, return original string
+		// Validate $level - if param is invalid or MINIFY_LEVEL_NONE, return original string
 		if (
-			filter_var($strictness, FILTER_VALIDATE_INT, self::$filterOpts) === false
-			|| $strictness === self::MINIFY_LEVEL_NONE
+			filter_var($level, FILTER_VALIDATE_INT, self::$filterOpts) === false
+			|| $level === self::MINIFY_LEVEL_NONE
 		) {
 			return $css . "/*" . self::MINIFY_LEVEL_NONE . "*/";
 		}
 
-		// Variable spaces - only include when strictness is low
-		$vs = $strictness > self::MINIFY_LEVEL_LOW ? '' : ' ';
+		// Variable length space character - only include when $level is low
+		$vs = $level > self::MINIFY_LEVEL_LOW ? '' : ' ';
 
-		// All
+		// Strip unnecessary stuff
 		$css = preg_replace("/\/\*.*?\*\//s", "", $css); // strip comments
 		$css = preg_replace("/(^|}+)[^{]+{\s*}/s", "\\1", $css); // strip empty rulesets
 		$css = preg_replace("/\R+/su", "", $css); // strip all vertical whitespace
 		$css = preg_replace("/\h+/s", " ", $css); // reduce/normalise horizontal whitespace
 		$css = preg_replace("/ ?(\{|\}|;) ?/s", "\\1", $css); // strip whitespace around braces and semi-colons
 
-		if ($strictness > self::MINIFY_LEVEL_LOW) {
+		if ($level > self::MINIFY_LEVEL_LOW) {
 			$css = str_replace(";}", "}", $css); // strip semi-colon from before closing brace
 		} else {
 			$css = preg_replace("/(?<!;|\})\}/s", ";}", $css); // insert missing semi-colon before closing brace
@@ -354,8 +365,8 @@ class LmdCrunchCss
 			// Indent string content depends on nested ruleset depth
 			$indent = str_repeat("\t", $depth);
 
-			// Insert indent at medium/low strictness only
-			$css .= ($strictness < self::MINIFY_LEVEL_HIGH) ? $indent : "";
+			// Insert indent at medium/low level only
+			$css .= ($level < self::MINIFY_LEVEL_HIGH) ? $indent : "";
 
 			if ($line_end === ";" || $line_beg === "}") {
 				// self-contained line (e.g. @import) or closing brace
@@ -374,7 +385,7 @@ class LmdCrunchCss
 				// self-contained ruleset
 
 				// Newline/indent ruleset declarations
-				$indent_dec = ($strictness < self::MINIFY_LEVEL_MEDIUM) ? "\n" . str_repeat("\t", $depth+1) : "";
+				$indent_dec = ($level < self::MINIFY_LEVEL_MEDIUM) ? "\n" . str_repeat("\t", $depth+1) : "";
 
 				// Get separate parts (selectors {declarations}), minus braces
 				preg_match("/^(?<sels>[^{]+)\{(?<decs>[^}]+)\}$/", $line, $matches);
@@ -390,16 +401,16 @@ class LmdCrunchCss
 
 				// Build ruleset
 				$css .= trim($sels) . $vs . "{" . $indent_dec . trim($decs)
-				. (($strictness < self::MINIFY_LEVEL_MEDIUM) ? "\n" . $indent : "")
+				. (($level < self::MINIFY_LEVEL_MEDIUM) ? "\n" . $indent : "")
 				. "}";
 			}
 
-			// Insert newline at medium/low strictness only
-			$css .= ($strictness < self::MINIFY_LEVEL_HIGH) ? "\n" : "";
+			// Insert newline at medium/low level only
+			$css .= ($level < self::MINIFY_LEVEL_HIGH) ? "\n" : "";
 		}
 
-		// append strictness level (is used to identify strictness when output file is read)
-		$css .= "/*" . $strictness . "*/";
+		// Append minification level (is used to identify level when output file is read)
+		$css .= "/*" . $level . "*/";
 
 		return trim($css);
 	}

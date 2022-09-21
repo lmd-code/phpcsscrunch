@@ -37,21 +37,21 @@ $cssFile = $crunch->process(3)->toFile();
 <div class="wrapper">
     <h1>LMD Crunch CSS Demo</h1>
 
-    <h2>CSS File (set to <code>$strictness = 3</code>):</h2>
+    <h2>CSS File (set to <code>$level = 3</code>):</h2>
     <p>Go to: <a href="<?=$cssFile?>"><?=$cssFile?></a></p>
 
     <!-- String outputs with different minification levels applied -->
 
-    <h2><code>$strictness = 0</code></h2>
+    <h2><code>$level = 0</code></h2>
     <p><textarea id="cssout0" cols="80" rows="15"><?=$crunch->process(0)->toString()?></textarea></p>
 
-    <h2><code>$strictness = 1</code></h2>
+    <h2><code>$level = 1</code></h2>
     <p><textarea id="cssout1" cols="80" rows="15"><?=$crunch->process(1)->toString()?></textarea></p>
 
-    <h2><code>$strictness = 2</code></h2>
+    <h2><code>$level = 2</code></h2>
     <p><textarea id="cssout2" cols="80" rows="15"><?=$crunch->process(2)->toString()?></textarea></p>
 
-    <h2><code>$strictness = 3</code></h2>
+    <h2><code>$level = 3</code></h2>
     <p><textarea id="cssout3" cols="80" rows="5"><?=$crunch->process(3)->toString()?></textarea></p>
 </div>
 </body>

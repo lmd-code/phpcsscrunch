@@ -53,7 +53,7 @@ $cssFile = $crunch->toFile();
 $cssCode = $crunch->toString();
 ```
 
-Unless you are using the results in multiple places, it is easiest to just save and link to the crunched/minified file in your HTML head section.
+Unless you are using the results in multiple places, it is easiest to just save and link to the minified file in your HTML head section.
 
 ```html
 <link href="/css/<?=$crunch->process(3)->toFile()?>" rel="stylesheet">
@@ -73,22 +73,22 @@ It is highly recommended that you only use this minifier in development and that
 
 ## Methods
 
-### `process($strictness = 0, $force = false)`
+### `process($level = 0, $force = false)`
 
 This method processes the source files if:
 
 - No source files have been processed and no output file has been saved.
 - The most recently modified source file is fresher than the saved output file.
-- If `$strictness` is different to the last applied minification strictness level.
-- If `$force` is `true` (see method arguments below).
+- If `$level` is different to the last applied minification level.
+- If `$force` is `true` (see method parameters below).
 
 **Returns:** self.
 
-The method accepts two arguments.
+The method accepts two parameters.
 
-#### `$strictness` (*integer*) - optional
+#### `$level` (*integer*) - optional
 
-The levels of strictness are indicated by an integer (0-3):
+Minification levels are indicated by an integer (0-3):
 
 **`0` (None)** - combines multiple source files into one without any minification. **Default**
 
@@ -120,7 +120,7 @@ Returns the minified CSS string.
 
 When chained to the `process()` method it returns the result of that method, otherwise when called directly it returns the result of the last `process()` call.
 
-### `minify($css, $strictness)`
+### `minify($css, $level)`
 
 The minification method itself can be called statically, useful if you just want to crunch some inline CSS code.
 
@@ -128,9 +128,9 @@ The minification method itself can be called statically, useful if you just want
 
 The CSS content string itself, not a file reference.
 
-#### `$strictness` (*integer*) - *required*
+#### `$level` (*integer*) - *required*
 
-The strictness level of minification (see `process()` method above). If an integer other than 0-3 is provided, it will default to `0` (none).
+The minification level (see `process()` method above). If an integer other than 0-3 is provided, it will default to `0` (none).
 
 #### Example
 
