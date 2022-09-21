@@ -6,20 +6,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
-- Changed: Strictness level constant names changed from `MINIFY_STRICTNESS_*` to `MINIFY_LEVEL_*`
-- Added: Strictness level 0 (none) `MINIFY_LEVEL_NONE`, which combines source files without minfication.
-- Changed: `Method::process()`/`Method::minify()` now default to `MINIFY_LEVEL_NONE` (breaking change from v1.* releases).
-- Changed: Renamed private methods `openSourceFile()` and `saveOutputFile()` to `readFile()` and `saveFile()`.
-- Changed: Refactored `process()`
-    - Improved the way method detemines whether to read/process source files or use ssaved output.
-    - Split "save as file" and "return as string" options into separate methods (and deprecated the $noSave parameter).
-    - Method now always returns `self` to facilitate chaining output methods.
-- Added: Method `toFile()`, returns filename.
-- Added: Method `toString()`, returns minified CSS string.
-- Added: Property `$rawCss` to store the source CSS, enabling output of multple different minified versions of the same source without having to read the files every time.
-- Added: Property `$lastStrictness` to store the last applied strictness level, enabling the same minified source to be requested in different formats (e.g. as a string and a file) without needing to minify again.
-- Added: The minification strictness level is appended as a comment to the end of `minify()` output and is used to determine previous minification level when reading an already saved output file.
-- Changed: References, parameters and variables referring to "strictness" (`$strictness`) changed to "minification level" (`$level`).
+## [2.0.0] - 22-09-21
+
+### Added
+
+- Minification level 0 (none) `MINIFY_LEVEL_NONE`, which combines source files without minfication.
+- Method `toFile()`, saves output file and returns filename.
+- Method `toString()`, returns minified CSS string.
+- Minification level is appended as a comment to the end of `minify()` output.
+
+### Changed
+
+- `process()`/`minify()` now default to `MINIFY_LEVEL_NONE` (a breaking change from v1.* releases).
+- Refactored `process()`
+    - Splitting of "save as file" and "return as string" options into separate methods has deprecated the `$noSave` parameter (for now it shows a warning).
+    - Method now returns `self` to facilitate chaining output methods.
+- References, parameters and variables referring to "strictness" (`$strictness`) changed to "minification level" (`$level`).
 
 ## [1.1.1] - 22-09-20
 
