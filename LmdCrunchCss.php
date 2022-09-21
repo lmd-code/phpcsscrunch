@@ -23,27 +23,6 @@ namespace lmdcode\lmdcrunchcss;
  */
 class LmdCrunchCss
 {
-	/** @var string[] $srcFiles List of valid source CSS files (full paths) */
-	private $srcFiles = [];
-
-	/** @var string $outFile Full path to valid output (crunched) CSS file */
-	private $outFile = '';
-
-	/** @var integer $mostRecentlyModified Modified time of most recently modified source file */
-	private $mostRecentlyModified = 0;
-
-	/** @var integer $lastOutputSaved Modified time of output file (if it exists) */
-	private $lastOutputSaved = 0;
-
-	/** @var boolean $hasError An error occured */
-	private $hasError = false;
-
-	/** @var array $validMimetypes Valid mime-types for source CSS files */
-	private static $validMimetypes = [
-		'text/css',
-		'text/plain'
-	];
-
 	/** @var int No minification (only combines source files) */
 	const MINIFY_LEVEL_NONE = 0;
 
@@ -55,6 +34,42 @@ class LmdCrunchCss
 
 	/** @var int Highest level of minification (almost zero whitespace) */
 	const MINIFY_LEVEL_HIGH = 3;
+	
+	/** @var boolean $hasError An error occured */
+	private $hasError = false;
+
+	/** @var string[] $srcFiles List of valid source CSS files (full paths) */
+	private $srcFiles = [];
+
+	/** @var string $outFile Full path to valid output (crunched) CSS file */
+	private $outFile = '';
+
+	/** @var boolean $outFileExists The specified output file already exists/is created */
+	private $outFileExists = false;
+
+	/** @var integer $srcLastModified Modified time of most recently modified source file */
+	private $srcLastModified = 0;
+
+	/** @var integer $outLastModified Modified time of output file (if it exists) */
+	private $outLastModified = 0;
+
+	/** @var string $outCss Output CSS after processing */
+	private $outCss = '';
+
+	/** @var string $rawCss Raw/unminfied CSS from combined source files */
+	private $rawCss = '';
+
+	/** @var bool $updatedCss Source file CSS was updated (modified more recently than output) */
+	private $updatedCss = false;
+
+	/** @var int $lastStrictness The last minification strictness level applied */
+	private $lastStrictness = -1; // -1 if not yet applied to allow for level 0
+
+	/** @var array $validMimetypes Valid mime-types for source CSS files */
+	private static $validMimetypes = [
+		'text/css',
+		'text/plain'
+	];
 
 	/** @var array $filterOpts Options for validating strictness values */
 	private static $filterOpts = [
@@ -98,8 +113,8 @@ class LmdCrunchCss
 						// Find the most recently modified source file
 						// (used to determine whether to run the processor)
 						$modified = $spl->getMTime();
-						if ($modified > $this->mostRecentlyModified) {
-							$this->mostRecentlyModified = $modified;
+						if ($modified > $this->srcLastModified) {
+							$this->srcLastModified = $modified;
 						}
 
 						$this->srcFiles[] = $srcFile;
@@ -155,11 +170,11 @@ class LmdCrunchCss
 
 			// If it is an existing output file, get its modified time for later comparison
 			if (file_exists($outFile)) {
-				$this->lastOutputSaved = filemtime($outFile);
+				$this->outLastModified = filemtime($outFile);
+				$this->outFileExists = true;
 			}
 
 			$this->outFile = $outFile;
-
 		} catch (\Exception $e) {
 			$this->hasError = true;
 			self::error($e->getMessage());
@@ -169,11 +184,11 @@ class LmdCrunchCss
 	/**
 	 * Process CSS source files
 	 * 
-	 * Only processes files if the most recently modified source file time is more recent than 
-	 * the last output saved (modified) time, or if `$force` is `true`.
-	 * 
-	 * It saves the result to the output file or returns the processed string for direct output 
-	 * according to `$nosave`.
+	 * Only processes files if:
+	 * - They have not yet been processed, or the most recently modified source file time is more 
+	 *   recent than the last output saved (modified) time.
+	 * - If the requested minification strictness level is different to the last applied level.
+	 * - If `$force` is `true`.
 	 * 
 	 * @param int $strictness Strictness level of minification (default: 0/none).
 	 * 
@@ -192,42 +207,87 @@ class LmdCrunchCss
 	 * recreation of the output CSS file, ignoring any modified dates. Useful for when you want to 
 	 * change the strictness level but haven'v't modified any of the source files.
 	 * 
-	 * @param bool $nosave Outputs processed CSS as a string (default: false). Set to `true` to 
-	 * output the processed CSS as a string without saving it to the output file. Useful for 
-	 * checking output with committing to it (or for inline CSS). When enabling this option, 
-	 * you need to echo/print the results. E.g. `echo $crunch->process(3, false, true);`
+	 * @param bool $noSave Deprecated and will be removed in a future release.
 	 *
-	 * @return string|bool
+	 * @return self
 	 */
-	public function process(int $strictness = 0, bool $force = false, bool $nosave = false)
+	public function process(int $strictness = 0, bool $force = false, bool $noSave = false): self
 	{
-		// Enforce valid minification strictness level
-		if (filter_var($strictness, FILTER_VALIDATE_INT, self::$filterOpts) === false) {
-			$strictness = self::MINIFY_LEVEL_NONE; // default
+		// The $noSave param is deprecated, show error notice to user
+		if (func_num_args() > 2) {
+			trigger_error(__METHOD__ . ': the noSave parameter is deprecated ', E_USER_DEPRECATED);
 		}
 
-		if (!$this->hasError && ($force || $this->mostRecentlyModified > $this->lastOutputSaved)) {
-			$combinedCSS = "";
-
-			foreach ($this->srcFiles as $srcFile) {
-				$srcCSS = $this->openSourceFile($srcFile);
-				$combinedCSS .= trim($srcCSS) . "\n\n";
+		if (!$this->hasError) {
+			// Enforce valid minification strictness level
+			if (filter_var($strictness, FILTER_VALIDATE_INT, self::$filterOpts) === false) {
+				$strictness = self::MINIFY_LEVEL_NONE; // default
 			}
 
-			$combinedCSS = self::minify($combinedCSS, $strictness);
-
-			// return string output if $nosave is true
-			if ($nosave) {
-				return $combinedCSS;
+			// Get output CSS content if it exists and is more recent than the source files.
+			// We do this here instead of in the constructor method in case a file is saved
+			// before a call to process() -- e.g. for output at different minification levels.
+			if ($this->outFileExists && $this->outLastModified > $this->srcLastModified) {
+				$this->outCss = $this->readFile($this->outFile);
+				// Get strictness level from file (last line comment)
+				if (preg_match('/\/\*(?<level>\d)\*\/$/', $this->outCss, $match) === 1) {
+					$this->lastStrictness = intval($match['level']);
+				}
 			}
 
-			// No debug, save output to file
-			$this->saveOutputFile($combinedCSS); // save to file
+			// Determine whether to run the minification process
+			if ($force || $this->outCss === '' || $strictness !== $this->lastStrictness) {
+				// We only need to read the source files if we haven't already done so
+				if ($this->rawCss === '') {
+					$combinedCSS = "";
+					foreach ($this->srcFiles as $srcFile) {
+						$srcCSS = $this->readFile($srcFile);
+						$combinedCSS .= trim($srcCSS) . "\n\n";
+					}
+					$this->rawCss = $combinedCSS;
+				}
 
-			return true;
+				$this->outCss = self::minify($this->rawCss, $strictness);
+				$this->updatedCss = true;
+			}
 		}
 
-		return false;
+		$this->lastStrictness = $strictness;
+
+		return $this;
+	}
+
+	/**
+	 * Save output CSS to output file.
+	 * 
+	 * Will only save to file if the source files generated fresh output.
+	 * 
+	 * Returns the output filename without the path (basename)
+	 *
+	 * @return string
+	 */
+	public function toFile(): string
+	{
+		if ($this->hasError) return ''; // stop if there was an error
+
+		// Only save file if source was updated
+		if ($this->updatedCss && $this->outCss !== '') {
+			$this->saveFile($this->outCss);
+			$this->outLastModified = filemtime($this->outFile); // update
+			$this->outFileExists = true;
+		}
+
+		return basename($this->outFile);
+	}
+
+	/**
+	 * Return output CSS as a string
+	 *
+	 * @return string
+	 */
+	public function toString(): string
+	{
+		return $this->outCss;
 	}
 
 	/**
@@ -247,7 +307,7 @@ class LmdCrunchCss
 			filter_var($strictness, FILTER_VALIDATE_INT, self::$filterOpts) === false
 			|| $strictness === self::MINIFY_LEVEL_NONE
 		) {
-			return $css;
+			return $css . "/*" . self::MINIFY_LEVEL_NONE . "*/";
 		}
 
 		// Variable spaces - only include when strictness is low
@@ -338,21 +398,24 @@ class LmdCrunchCss
 			$css .= ($strictness < self::MINIFY_LEVEL_HIGH) ? "\n" : "";
 		}
 
+		// append strictness level (is used to identify strictness when output file is read)
+		$css .= "/*" . $strictness . "*/";
+
 		return trim($css);
 	}
 
 	/**
-	 * Open a source file and return its contents
+	 * Read a CSS file and return its contents
 	 *
 	 * @param string $file Full path to file
 	 *
 	 * @return string
 	 */
-	private function openSourceFile(string $file): string
+	private function readFile(string $file): string
 	{
 		try {
 			if (!$css = @file_get_contents($file)) {
-				throw new \Exception('Could not open the source CSS file. ' . $file);
+				throw new \Exception('Could not open the file. ' . $file);
 			}
 			return $css;
 		} catch (\Exception $e) {
@@ -361,13 +424,13 @@ class LmdCrunchCss
 	}
 
 	/**
-	 * Save content to an output file
+	 * Save CSS content to the output file
 	 *
 	 * @param string $css Content to save
 	 *
 	 * @return void
 	 */
-	private function saveOutputFile(string $css): void
+	private function saveFile(string $css): void
 	{
 		try {
 			if (!@file_put_contents($this->outFile, $css)) {

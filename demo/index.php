@@ -22,11 +22,8 @@ $sourceFiles = [
 
 $crunch = new LmdCrunchCss($sourceFiles,  $dir . '/css-output.min.css');
 
-// Save output to file with default strictness (3)
-//$crunch->process();
-
-// Get returned string with level 0 strictness (no minification), without saving to file
-$css = $crunch->process(0, false, true);
+// Save file with maximum minification and get filename
+$cssFile = $crunch->process(3)->toFile();
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -34,27 +31,28 @@ $css = $crunch->process(0, false, true);
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>LMD Crunch CSS Demo</title>
-    <style type="text/css">.wrapper{width: 100%;max-width:800px;margin: 0 auto}p{text-align: center}textarea{width: 100%;max-width: 800px;tab-size:4;white-space: pre;overflow-wrap: normal;overflow-x: scroll}</style>
+    <style type="text/css">.wrapper{width: 100%;max-width:800px;margin: 0 auto}textarea{width: 100%;max-width: 800px;tab-size:4;white-space: pre;overflow-wrap: normal;overflow-x: scroll}</style>
 </head>
 <body>
 <div class="wrapper">
     <h1>LMD Crunch CSS Demo</h1>
 
-    <!-- The combined output without any minification applied -->
+    <h2>CSS File (set to <code>$strictness = 3</code>):</h2>
+    <p>Go to: <a href="<?=$cssFile?>"><?=$cssFile?></a></p>
+
+    <!-- String outputs with different minification levels applied -->
 
     <h2><code>$strictness = 0</code></h2>
-    <p><textarea id="cssout0" cols="80" rows="15"><?=$css?></textarea></p>
-
-    <!-- For the following examples, we are statically calling the minify method directly on the already combined output -->
+    <p><textarea id="cssout0" cols="80" rows="15"><?=$crunch->process(0)->toString()?></textarea></p>
 
     <h2><code>$strictness = 1</code></h2>
-    <p><textarea id="cssout1" cols="80" rows="15"><?=LmdCrunchCss::minify($css, 1)?></textarea></p>
+    <p><textarea id="cssout1" cols="80" rows="15"><?=$crunch->process(1)->toString()?></textarea></p>
 
     <h2><code>$strictness = 2</code></h2>
-    <p><textarea id="cssout2" cols="80" rows="15"><?=LmdCrunchCss::minify($css, 2)?></textarea></p>
+    <p><textarea id="cssout2" cols="80" rows="15"><?=$crunch->process(2)->toString()?></textarea></p>
 
     <h2><code>$strictness = 3</code></h2>
-    <p><textarea id="cssout3" cols="80" rows="5"><?=LmdCrunchCss::minify($css, 3)?></textarea></p>
+    <p><textarea id="cssout3" cols="80" rows="5"><?=$crunch->process(3)->toString()?></textarea></p>
 </div>
 </body>
 </html>
