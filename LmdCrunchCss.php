@@ -23,77 +23,94 @@ namespace lmdcode\lmdcrunchcss;
 class LmdCrunchCss
 {
     /**
-     * @var int No minification (only combines source files)
+     * No minification (only combines source files)
      */
     public const MINIFY_LEVEL_NONE = 0;
 
     /**
-     * @var int Low level minification (only excess whitespace removed)
+     * Low level minification (only excess whitespace removed)
      */
     public const MINIFY_LEVEL_LOW = 1;
 
     /**
-     * @var int Medium level minification (most whitespace removed)
+     * Medium level minification (most whitespace removed)
      */
     public const MINIFY_LEVEL_MEDIUM = 2;
 
     /**
-     * @var int Highest level of minification (almost zero whitespace)
+     * Highest level of minification (almost zero whitespace)
      */
     public const MINIFY_LEVEL_HIGH = 3;
 
     /**
-     * @var boolean $hasError An error occured
+     * An error occured
+     * @var boolean
      */
     private $hasError = false;
 
     /**
-     * @var string[] $srcFiles List of valid source CSS files (full paths)
+     * Document root path
+     * @var string
+     */
+    private $root = '';
+
+    /**
+     * List of source CSS files
+     * @var string[]
      */
     private $srcFiles = [];
 
     /**
-     * @var string $outFile Full path to valid output (minified) CSS file
+     * Output (minified) CSS file
+     * @var string
      */
     private $outFile = '';
 
     /**
-     * @var boolean $outFileExists The specified output file already exists/is created
+     * The specified output file already exists
+     * @var boolean
      */
     private $outFileExists = false;
 
     /**
-     * @var integer $srcLastModified Modified time of most recently modified source file
+     * Modified timestamp of most recently modified source file
+     * @var integer
      */
     private $srcLastModified = 0;
 
     /**
-     * @var integer $outLastModified Modified time of output file (if it exists)
+     * Modified timestamp of output file (if it exists)
+     * @var integer
      */
     private $outLastModified = 0;
 
     /**
-     * @var string $outCss Output CSS after processing
-     */
-    private $outCss = '';
-
-    /**
-     * @var string $rawCss Raw/unminfied CSS from combined source files
+     * Raw/unminfied CSS from combined source files
+     * @var string
      */
     private $rawCss = '';
 
     /**
-     * @var bool $updatedCss Source file CSS was updated (modified more recently than output)
+     * Output CSS after processing
+     * @var string
+     */
+    private $outCss = '';
+
+    /**
+     * A source file has been modified more recently than the output file
+     * @var bool
      */
     private $updatedCss = false;
 
     /**
-     * @var int $lastMinify The last minification level applied
+     * The last minification level applied
+     * @var int
      */
     private $lastMinify = -1; // -1 if not yet applied to allow for level 0
 
     /**
-     * @var array $validMimetypes Valid mime-types for source CSS files
+     * Valid mime-types for CSS files
+     * @var string[]
      */
     private static $validMimetypes = [
         'text/css',
@@ -101,7 +118,8 @@ class LmdCrunchCss
     ];
 
     /**
-     * @var array $filterOpts Options for validating minification level
+     * Options for validating minification level
+     * @var array
      */
     private static $filterOpts = [
         'options' => [
@@ -113,27 +131,39 @@ class LmdCrunchCss
     /**
      * Constructor
      *
-     * File Paths/Names
-     * - You must provide the full (absolute) server path to the source and output files,
-     *   not the URIs.
-     * - Source files must be standard CSS files (no SCSS/SASS/LESS etc) and have a '.css'
-     *   extension.
-     * - Source files must be properly formatted CSS (any formatting errors may cause issues).
-     * - Output file must not start with a dot (".") and must have a '.css' extension.
-     * - Output file *does not need* to exist yet (it will be created if the output directory
-     *   is writable).
-     * - The output directory path must exist (and be writable), you will need to create it
-     *   manually if it does not.
-     *
      * **Important:** the order in which you add source files to the array will be the order
      * in which they are added to the output file, so keep the *cascade* in mind!
      *
-     * @param array  $srcFiles Full paths to CSS source files (must have '.css' extension)
-     * @param string $outFile  Full path for processed CSS output file (must have '.css' extension)
+     * @param array  $srcFiles Paths (from document root) to CSS source files.
+     *                         - You must provide absolute paths from the document root,
+     *                           not the URI or file-system path. For example, for
+     *                           `http://example.com/assets/style.css` use `/assets/mystyle.css`.
+     *                         - Files must have a `.css` extension.
+     *                         - Files must be properly formatted standard CSS (no SCSS/SASS/LESS).
+     *
+     * @param string $outFile  Path (from document root) to CSS output file.
+     *                         - You must provide absolute paths (see `$srcFiles` above).
+     *                         - The directory must already exist (and be writable).
+     *                         - The file must have a `.css` extension.
+     *                         - The file does not need to exist yet (it will be created).
+     *
+     * @param string $docRoot  Absolute file-system path to the document root (for example,
+     *                         `http://example.com/` might be `/home/site/public_html`).
+     *                         Most often just providing `$_SERVER['DOCUMENT_ROOT']` works.
+     *
+     * @return void;
      */
-    public function __construct(array $srcFiles, string $outFile)
+    public function __construct(array $srcFiles, string $outFile, string $docRoot)
     {
         try {
+            // Validate document root path
+            $docRoot = self::normalisePath($docRoot);
+            if ($docRoot === '' || !is_dir($docRoot)) {
+                throw new \Exception('The provided document root was either not provided or does not appear to exist.');
+            }
+
+            $this->root = $docRoot;
+
             // Source Files
             if (!is_array($srcFiles) || count($srcFiles) < 1) {
                 throw new \Exception('Array of source files is empty or invalid.');
@@ -144,9 +174,11 @@ class LmdCrunchCss
             $srcInvalid = []; // capture any missing or invalid (not CSS) files
 
             foreach ($srcFiles as &$srcFile) {
-                $srcFile = self::normalisePath($srcFile);
+                // normalise and enforce leading forward slash
+                $srcFile = '/' . ltrim(self::normalisePath($srcFile), '/');
+                $absPath = $this->root . $srcFile; // absolute path to file
 
-                $spl = new \SplFileInfo($srcFile);
+                $spl = new \SplFileInfo($absPath);
 
                 $hasCssExtn = $spl->getExtension() === 'css';
 
@@ -154,7 +186,7 @@ class LmdCrunchCss
                     if (
                         $hasCssExtn
                         && $spl->getType() === 'file'
-                        && in_array(mime_content_type($srcFile), self::$validMimetypes)
+                        && in_array(mime_content_type($absPath), self::$validMimetypes)
                     ) {
                         // Find the most recently modified source file
                         // (used to determine whether to run the processor)
@@ -182,41 +214,30 @@ class LmdCrunchCss
             }
 
             // Output File
-            if ($outFile !== '') {
-                $outFile = self::normalisePath($outFile);
-            }
+            // normalise and enforce leading forward slash
+            $outFile = '/' . ltrim(self::normalisePath($outFile), '/');
+            $absOut = $this->root . $outFile; // absolute path to file
+            $pathInfo = pathinfo($absOut); // break into path components
 
             // Do not overwrite a source file!
             if (in_array($outFile, $srcFiles)) {
                 throw new \Exception('Output file location matches a source file location.');
             }
 
-            $invalidDirs = ['.', '..', '\\', '/'];
-
-            $pathInfo = pathinfo($outFile);
-
-            // Check if directory was provided and is valid
-            if (!isset($pathInfo['dirname']) || in_array($pathInfo['dirname'], $invalidDirs)) {
-                throw new \Exception(
-                    'Output directory is not provided or is invalid (must be an absolute path).'
-                );
-            }
-
             // Check if provided directory exists
             if (!is_dir($pathInfo['dirname'])) {
                 throw new \Exception(
-                    'The provided output directory does not exist (you need to create it).'
+                    'The provided output directory path does not exist, please create it:<br>'
+                    . $pathInfo['dirname']
                 );
             }
 
             // Trim output file name
             $outFileName = isset($pathInfo['filename']) ? trim($pathInfo['filename']) : '';
 
-            // Output file name is required and must be a valid format
-            if ($outFileName === '' || substr($outFileName, 0, 1) === '.') {
-                throw new \Exception(
-                    'Output filename is not provided or is invalid (must not start with a dot ".")'
-                );
+            // Output file name is required
+            if ($outFileName === '') {
+                throw new \Exception('The output filename was not provided.');
             }
 
             // Output file must have 'css' extension
@@ -225,8 +246,8 @@ class LmdCrunchCss
             }
 
             // If it is an existing output file, get its modified time for later comparison
-            if (file_exists($outFile)) {
-                $this->outLastModified = filemtime($outFile);
+            if (file_exists($absOut)) {
+                $this->outLastModified = filemtime($absOut);
                 $this->outFileExists = true;
             }
 
@@ -246,9 +267,7 @@ class LmdCrunchCss
      * - If `$level` is different to the last applied minification level.
      * - If `$force` is `true`.
      *
-     * @param int  $level  Minification level, none (0) to high (3) (default: 0).
-     *
-     *                     Minification Levels
+     * @param int  $level  Minification level 0-3 (default: 0).
      *                     - 0 (None) - combines multiple source files without minification.
      *                     - 1 (Low) - only unnecessary/excess whitespace removed (blank lines,
      *                       multiple spaces/tabs, empty rulesets etc).
@@ -257,22 +276,13 @@ class LmdCrunchCss
      *                     - 3 (High) - almost zero whitespace, with only necessary whitespace
      *                       remaining (e.g., between style values, such as margin declarations).
      *
-     *                     If an integer other than 0-3 is provided, it will default to `0` none).
-     *
      * @param bool $force  Force the recreation of minified CSS output from the source files even
      *                     when it would not otherwise.
      *
-     * @param bool $noSave Deprecated and will be removed in a future release.
-     *
      * @return self
      */
-    public function process(int $level = 0, bool $force = false, bool $noSave = false): self
+    public function process(int $level = 0, bool $force = false): self
     {
-        // The $noSave param is deprecated, show error notice to user
-        if (func_num_args() > 2) {
-            trigger_error(__METHOD__ . ': the noSave parameter is deprecated ', E_USER_DEPRECATED);
-        }
-
         if (!$this->hasError) {
             // Enforce valid minification level
             if (filter_var($level, FILTER_VALIDATE_INT, self::$filterOpts) === false) {
@@ -317,7 +327,7 @@ class LmdCrunchCss
      *
      * Will only save to file if the source files generated fresh output.
      *
-     * Returns the output filename without the path (basename)
+     * Returns the output file path (from document root, as provided)
      *
      * @return string
      */
@@ -330,11 +340,11 @@ class LmdCrunchCss
         // Only save file if source was updated
         if ($this->updatedCss && $this->outCss !== '') {
             $this->saveFile($this->outCss);
-            $this->outLastModified = filemtime($this->outFile); // update
+            $this->outLastModified = filemtime($this->root . $this->outFile); // update
             $this->outFileExists = true;
         }
 
-        return basename($this->outFile);
+        return $this->outFile;
     }
 
     /**
@@ -357,6 +367,10 @@ class LmdCrunchCss
      */
     public static function minify(string $css, int $level): string
     {
+        if (($css = trim($css)) === '') {
+            return ''; // no CSS was provided
+        }
+
         // Validate $level - if param is invalid or MINIFY_LEVEL_NONE, return original string
         if (
             filter_var($level, FILTER_VALIDATE_INT, self::$filterOpts) === false
@@ -436,19 +450,21 @@ class LmdCrunchCss
                 // Get separate parts (selectors {declarations}), minus braces
                 preg_match("/^(?<sels>[^{]+)\{(?<decs>[^}]+)\}$/", $line, $matches);
 
-                // Selectors - normalise space around commas
-                $sels = preg_replace("/\h?,\h?/s", ",$vs", $matches['sels']);
+                if (isset($matches['sels']) && isset($matches['decs'])) {
+                    // Selectors - normalise space around commas
+                    $sels = preg_replace("/\h?,\h?/s", ",$vs", $matches['sels']);
 
-                // Declarations
-                // - normalise space around colons and commas
-                $decs = preg_replace("/\h?([:,])\h?/", "\\1$vs", $matches['decs']);
-                // - remove space around semi-colons and insert indentation
-                $decs = preg_replace("/\h?;\h?/s", ";$indent_dec", $decs);
+                    // Declarations
+                    // - normalise space around colons and commas
+                    $decs = preg_replace("/\h?([:,])\h?/", "\\1$vs", $matches['decs']);
+                    // - remove space around semi-colons and insert indentation
+                    $decs = preg_replace("/\h?;\h?/s", ";$indent_dec", $decs);
 
-                // Build ruleset
-                $css .= trim($sels) . $vs . "{" . $indent_dec . trim($decs)
+                    // Build ruleset
+                    $css .= trim($sels) . $vs . "{" . $indent_dec . trim($decs)
                     . (($level < self::MINIFY_LEVEL_MEDIUM) ? "\n" . $indent : "")
                     . "}";
+                }
             }
 
             // Insert newline at medium/low level only
@@ -471,7 +487,7 @@ class LmdCrunchCss
     private function readFile(string $file): string
     {
         try {
-            if (!$css = @file_get_contents($file)) {
+            if (!$css = @file_get_contents($this->root . $file)) {
                 throw new \Exception('Could not open the file. ' . $file);
             }
             return $css;
@@ -490,7 +506,7 @@ class LmdCrunchCss
     private function saveFile(string $css): void
     {
         try {
-            if (!@file_put_contents($this->outFile, $css)) {
+            if (!@file_put_contents($this->root . $this->outFile, $css)) {
                 throw new \Exception('Could not save the output CSS file.');
             }
         } catch (\Exception $e) {
@@ -501,14 +517,13 @@ class LmdCrunchCss
     /**
      * Normalise path separators - make back slashes into forward slashes
      *
-     * @param string  $path          The path to normalise.
-     * @param boolean $trailingSlash Add a trailing slash for directories (default: false)
+     * @param string  $path The path to normalise.
      *
      * @return string
      */
-    private static function normalisePath(string $path, bool $trailingSlash = false): string
+    private static function normalisePath(string $path): string
     {
-        return str_replace('\\', '/', rtrim($path, '/\\')) . ($trailingSlash ? '/' : '');
+        return rtrim(str_replace('\\', '/', $path), '/');
     }
 
     /**
@@ -520,7 +535,7 @@ class LmdCrunchCss
      *
      * @return void
      */
-    private static function error($msg): void
+    private static function error(string $msg): void
     {
         echo '<p><strong>' . __CLASS__ . ' Error:</strong> ' . $msg . '</p>';
     }
