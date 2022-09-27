@@ -357,6 +357,10 @@ class LmdCrunchCss
      */
     public static function minify(string $css, int $level): string
     {
+        if (($css = trim($css)) === '') {
+            return ''; // no CSS was provided
+        }
+
         // Validate $level - if param is invalid or MINIFY_LEVEL_NONE, return original string
         if (
             filter_var($level, FILTER_VALIDATE_INT, self::$filterOpts) === false
@@ -436,19 +440,21 @@ class LmdCrunchCss
                 // Get separate parts (selectors {declarations}), minus braces
                 preg_match("/^(?<sels>[^{]+)\{(?<decs>[^}]+)\}$/", $line, $matches);
 
-                // Selectors - normalise space around commas
-                $sels = preg_replace("/\h?,\h?/s", ",$vs", $matches['sels']);
+                if (isset($matches['sels']) && isset($matches['decs'])) {
+                    // Selectors - normalise space around commas
+                    $sels = preg_replace("/\h?,\h?/s", ",$vs", $matches['sels']);
 
-                // Declarations
-                // - normalise space around colons and commas
-                $decs = preg_replace("/\h?([:,])\h?/", "\\1$vs", $matches['decs']);
-                // - remove space around semi-colons and insert indentation
-                $decs = preg_replace("/\h?;\h?/s", ";$indent_dec", $decs);
+                    // Declarations
+                    // - normalise space around colons and commas
+                    $decs = preg_replace("/\h?([:,])\h?/", "\\1$vs", $matches['decs']);
+                    // - remove space around semi-colons and insert indentation
+                    $decs = preg_replace("/\h?;\h?/s", ";$indent_dec", $decs);
 
-                // Build ruleset
-                $css .= trim($sels) . $vs . "{" . $indent_dec . trim($decs)
+                    // Build ruleset
+                    $css .= trim($sels) . $vs . "{" . $indent_dec . trim($decs)
                     . (($level < self::MINIFY_LEVEL_MEDIUM) ? "\n" . $indent : "")
                     . "}";
+                }
             }
 
             // Insert newline at medium/low level only
@@ -501,14 +507,13 @@ class LmdCrunchCss
     /**
      * Normalise path separators - make back slashes into forward slashes
      *
-     * @param string  $path          The path to normalise.
-     * @param boolean $trailingSlash Add a trailing slash for directories (default: false)
+     * @param string  $path The path to normalise.
      *
      * @return string
      */
-    private static function normalisePath(string $path, bool $trailingSlash = false): string
+    private static function normalisePath(string $path): string
     {
-        return str_replace('\\', '/', rtrim($path, '/\\')) . ($trailingSlash ? '/' : '');
+        return rtrim(str_replace('\\', '/', $path), '/');
     }
 
     /**
@@ -520,7 +525,7 @@ class LmdCrunchCss
      *
      * @return void
      */
-    private static function error($msg): void
+    private static function error(string $msg): void
     {
         echo '<p><strong>' . __CLASS__ . ' Error:</strong> ' . $msg . '</p>';
     }
