@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+## [2.0.1] - 22-09-27
+
+### Fixed
+
+- The `minify()` method no longer returns errors if `$css` param is empty.
+
 ## [2.0.0] - 22-09-21
 
 ### Added
@@ -52,6 +58,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 - Initial release.
 
-[Unreleased]: https://github.com/lmd-code/lmdcrunchcss/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/lmd-code/lmdcrunchcss/compare/v2.0.1...HEAD
+[2.0.1]: https://github.com/lmd-code/lmdcrunchcss/releases/tag/v2.0.1
+[2.0.0]: https://github.com/lmd-code/lmdcrunchcss/releases/tag/v2.0.0
+[1.1.1]: https://github.com/lmd-code/lmdcrunchcss/releases/tag/v1.1.1
 [1.1.0]: https://github.com/lmd-code/lmdcrunchcss/releases/tag/v1.1.0
 [1.0.0]: https://github.com/lmd-code/lmdcrunchcss/releases/tag/v1.0.0
