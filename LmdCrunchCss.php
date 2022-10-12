@@ -49,6 +49,12 @@ class LmdCrunchCss
     private $hasError = false;
 
     /**
+     * Dev mode enabled (toFile() markup outputs source files)
+     * @var boolean
+     */
+    private $devMode = false;
+
+    /**
      * Document root path
      * @var string
      */
@@ -109,6 +115,12 @@ class LmdCrunchCss
     private $lastMinify = -1; // -1 if not yet applied to allow for level 0
 
     /**
+     * Minification level string token added to CSS files
+     * @var string
+     */
+    private static $minifyToken = '/*lmdcrunchcss=%d*/';
+
+    /**
      * Valid mime-types for CSS files
      * @var string[]
      */
@@ -151,22 +163,39 @@ class LmdCrunchCss
      *                         `http://example.com/` might be `/home/site/public_html`).
      *                         Most often just providing `$_SERVER['DOCUMENT_ROOT']` works.
      *
+     * @param bool   $devMode  Development mode enabled. When enabled (true) the `toFile()` method
+     *                         returns the stylesheet markup for the source files, while saving the
+     *                         minified file in the background. When not enabled (default), the
+     *                         markup for the minified file is returned.
+     *
      * @return void;
      */
-    public function __construct(array $srcFiles, string $outFile, string $docRoot)
+    public function __construct(array $srcFiles, string $outFile, string $docRoot, bool $devMode = false)
     {
         try {
-            // Validate document root path
+            $this->devMode = $devMode; // set development mode
+
+            /*
+             * Document Root
+             */
             $docRoot = self::normalisePath($docRoot);
-            if ($docRoot === '' || !is_dir($docRoot)) {
-                throw new \Exception('The provided document root was either not provided or does not appear to exist.');
+
+            // Validate document root path
+            if (!is_dir($docRoot)) {
+                if ($docRoot === '') {
+                    throw new \Exception('The document route must not be empty.');
+                } else {
+                    throw new \Exception('The document route must be an existing path.');
+                }
             }
 
-            $this->root = $docRoot;
+            $this->root = $docRoot; // set document root
 
-            // Source Files
-            if (!is_array($srcFiles) || count($srcFiles) < 1) {
-                throw new \Exception('Array of source files is empty or invalid.');
+            /*
+             * Source Files
+             */
+            if (count($srcFiles) < 1) {
+                throw new \Exception('The source files array must not be empty.');
             }
 
             $srcFiles = array_unique($srcFiles); // remove duplicates
@@ -174,13 +203,12 @@ class LmdCrunchCss
             $srcInvalid = []; // capture any missing or invalid (not CSS) files
 
             foreach ($srcFiles as &$srcFile) {
-                // normalise and enforce leading forward slash
-                $srcFile = '/' . ltrim(self::normalisePath($srcFile), '/');
+                $srcFile = '/' . ltrim(self::normalisePath($srcFile), '/'); // normalise + forward slash
                 $absPath = $this->root . $srcFile; // absolute path to file
 
-                $spl = new \SplFileInfo($absPath);
+                $spl = new \SplFileInfo($absPath); // get file information
 
-                $hasCssExtn = $spl->getExtension() === 'css';
+                $hasCssExtn = $spl->getExtension() === 'css'; // check file has CSS extension
 
                 if ($spl->isReadable()) {
                     if (
@@ -195,11 +223,12 @@ class LmdCrunchCss
                             $this->srcLastModified = $modified;
                         }
 
-                        $this->srcFiles[] = $srcFile;
+                        $this->srcFiles[] = $srcFile; // add to source files
                     } else {
-                        $srcInvalid[] = 'Invalid: ' . $srcFile;
+                        $srcInvalid[] = 'Invalid: ' . $srcFile; // Not a valid source file
                     }
                 } else {
+                    // Missing or not a valid source file
                     $srcInvalid[] = ($hasCssExtn ? 'Not Found' : 'Invalid') . ': ' . $srcFile;
                 }
             }
@@ -207,35 +236,36 @@ class LmdCrunchCss
             // Throw an exception if any of the source files do not exist or are invalid.
             if (count($srcInvalid) > 0) {
                 throw new \Exception(
-                    'One or more source files could not be found/opened or are otherwise invalid,
-                    please check that the following paths/filenames are correct<br>- '
-                        . implode('<br>- ', $srcInvalid)
+                    'One or more source files could not be found/opened or are otherwise invalid, '
+                    . 'please check that the following paths/filenames are correct<br>- '
+                    . implode('<br>- ', $srcInvalid)
                 );
             }
 
-            // Output File
-            // normalise and enforce leading forward slash
-            $outFile = '/' . ltrim(self::normalisePath($outFile), '/');
+            /*
+             * Output File
+             */
+            $outFile = '/' . ltrim(self::normalisePath($outFile), '/'); // normalise + forward slash
             $absOut = $this->root . $outFile; // absolute path to file
             $pathInfo = pathinfo($absOut); // break into path components
 
             // Do not overwrite a source file!
             if (in_array($outFile, $srcFiles)) {
-                throw new \Exception('Output file location matches a source file location.');
+                throw new \Exception('The output file path must not match a source file path.');
             }
 
             // Check if provided directory exists
             if (!is_dir($pathInfo['dirname'])) {
                 throw new \Exception(
-                    'The provided output directory path does not exist, please create it:<br>'
-                    . $pathInfo['dirname']
+                    'The provided output file\'s directory path does not exist, please check it '
+                    . 'is correct, or otherwise create it:<br>' . $pathInfo['dirname']
                 );
             }
 
-            // Trim output file name
+            // Get and trim filename
             $outFileName = isset($pathInfo['filename']) ? trim($pathInfo['filename']) : '';
 
-            // Output file name is required
+            // Output filename is required
             if ($outFileName === '') {
                 throw new \Exception('The output filename was not provided.');
             }
@@ -251,10 +281,10 @@ class LmdCrunchCss
                 $this->outFileExists = true;
             }
 
-            $this->outFile = $outFile;
+            $this->outFile = $outFile; // set output file
         } catch (\Exception $e) {
             $this->hasError = true;
-            self::error($e->getMessage());
+            self::error($e->getMessage(), __METHOD__);
         }
     }
 
@@ -295,7 +325,8 @@ class LmdCrunchCss
             if ($this->outFileExists && $this->outLastModified > $this->srcLastModified) {
                 $this->outCss = $this->readFile($this->outFile);
                 // Get minification level from file (last line comment)
-                if (preg_match('/\/\*(?<level>\d)\*\/$/', $this->outCss, $match) === 1) {
+                $regex = str_replace('%d', '(?<level>\d)', preg_quote(self::$minifyToken, '/'));
+                if (preg_match('/' . $regex . '/', $this->outCss, $match) === 1) {
                     $this->lastMinify = intval($match['level']);
                 }
             }
@@ -329,9 +360,11 @@ class LmdCrunchCss
      *
      * Returns the output file path (from document root, as provided)
      *
+     * @param bool $bustCache Add a cache buster to the stylesheet markup (default: false)
+     *
      * @return string
      */
-    public function toFile(): string
+    public function toFile(bool $bustCache = false): string
     {
         if ($this->hasError) {
             return ''; // stop if there was an error
@@ -344,7 +377,10 @@ class LmdCrunchCss
             $this->outFileExists = true;
         }
 
-        return $this->outFile;
+        if ($this->devMode) {
+            return self::markup($this->srcFiles, $bustCache);
+        }
+        return self::markup([$this->outFile], $bustCache);
     }
 
     /**
@@ -376,7 +412,7 @@ class LmdCrunchCss
             filter_var($level, FILTER_VALIDATE_INT, self::$filterOpts) === false
             || $level === self::MINIFY_LEVEL_NONE
         ) {
-            return $css . "/*" . self::MINIFY_LEVEL_NONE . "*/";
+            return $css . sprintf(self::$minifyToken, self::MINIFY_LEVEL_NONE);
         }
 
         // Variable length space character - only include when $level is low
@@ -472,7 +508,7 @@ class LmdCrunchCss
         }
 
         // Append minification level (is used to identify level when output file is read)
-        $css .= "/*" . $level . "*/";
+        $css .= sprintf(self::$minifyToken, $level);
 
         return trim($css);
     }
@@ -492,7 +528,7 @@ class LmdCrunchCss
             }
             return $css;
         } catch (\Exception $e) {
-            self::error($e->getMessage());
+            self::error($e->getMessage(), __METHOD__);
         }
     }
 
@@ -510,8 +546,25 @@ class LmdCrunchCss
                 throw new \Exception('Could not save the output CSS file.');
             }
         } catch (\Exception $e) {
-            self::error($e->getMessage());
+            self::error($e->getMessage(), __METHOD__);
         }
+    }
+
+    private static function markup(array $styles, bool $bustCache = false): string
+    {
+        if (count($styles) < 1) {
+            return '';
+        }
+
+        $cacheBuster = ($bustCache) ? '?t=' . time() : ''; // add a cache buster
+
+        $out = '';
+
+        foreach ($styles as $file) {
+            $out .= '<link href="' . $file . $cacheBuster . '" rel="stylesheet">' . PHP_EOL;
+        }
+
+        return $out;
     }
 
     /**
@@ -532,11 +585,12 @@ class LmdCrunchCss
      * Outputs directly to screen.
      *
      * @param string $msg The error message
+     * @param string $method The method that triggered the error
      *
      * @return void
      */
-    private static function error(string $msg): void
+    private static function error(string $msg, string $method): void
     {
-        echo '<p><strong>' . __CLASS__ . ' Error:</strong> ' . $msg . '</p>';
+        echo '<p><strong>' . $method . ' Error:</strong> ' . $msg . '</p>';
     }
 }
