@@ -1,4 +1,12 @@
 /** CSS Input 1 */
+html,
+*,
+::before,
+::after
+{
+    box-sizing: border-box;
+}
+
 html
 {
 	line-height: 1.4;
@@ -13,6 +21,19 @@ body
     background-color: #fff;
     color: #000;
     font-size: 1rem;
+}
+
+header,
+footer
+{
+    text-align: center;
+}
+
+main
+{
+    width: 100%;
+    max-width:800px;
+    margin: 0 auto;
 }
 
 h1

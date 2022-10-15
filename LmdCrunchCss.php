@@ -6,6 +6,7 @@
  * https://github.com/lmd-code/lmdcrunchcss
  *
  * @version 2.0.1
+ * @license MIT
  */
 
 declare(strict_types=1);
@@ -25,22 +26,22 @@ class LmdCrunchCss
     /**
      * No minification (only combines source files)
      */
-    public const MINIFY_LEVEL_NONE = 0;
+    public const MINIFY_NONE = 0;
 
     /**
      * Low level minification (only excess whitespace removed)
      */
-    public const MINIFY_LEVEL_LOW = 1;
+    public const MINIFY_LOW = 1;
 
     /**
      * Medium level minification (most whitespace removed)
      */
-    public const MINIFY_LEVEL_MEDIUM = 2;
+    public const MINIFY_MEDIUM = 2;
 
     /**
      * Highest level of minification (almost zero whitespace)
      */
-    public const MINIFY_LEVEL_HIGH = 3;
+    public const MINIFY_HIGH = 3;
 
     /**
      * An error occured
@@ -49,7 +50,7 @@ class LmdCrunchCss
     private $hasError = false;
 
     /**
-     * Dev mode enabled (toFile() markup outputs source files)
+     * Enable development mode
      * @var boolean
      */
     private $devMode = false;
@@ -121,6 +122,12 @@ class LmdCrunchCss
     private static $minifyToken = '/*lmdcrunchcss=%d*/';
 
     /**
+     * Minification failed message
+     * @var string
+     */
+    private static $noMinifyMsg = '<!-- ' . __CLASS__ . ': Could not minify files -->';
+
+    /**
      * Valid mime-types for CSS files
      * @var string[]
      */
@@ -135,8 +142,8 @@ class LmdCrunchCss
      */
     private static $filterOpts = [
         'options' => [
-            'min_range' => self::MINIFY_LEVEL_NONE,
-            'max_range' => self::MINIFY_LEVEL_HIGH
+            'min_range' => self::MINIFY_NONE,
+            'max_range' => self::MINIFY_HIGH
         ]
     ];
 
@@ -163,10 +170,7 @@ class LmdCrunchCss
      *                         `http://example.com/` might be `/home/site/public_html`).
      *                         Most often just providing `$_SERVER['DOCUMENT_ROOT']` works.
      *
-     * @param bool   $devMode  Development mode enabled. When enabled (true) the `toFile()` method
-     *                         returns the stylesheet markup for the source files, while saving the
-     *                         minified file in the background. When not enabled (default), the
-     *                         markup for the minified file is returned.
+     * @param bool   $devMode  Enable development mode (default: false).
      *
      * @return void;
      */
@@ -178,7 +182,7 @@ class LmdCrunchCss
             /*
              * Document Root
              */
-            $docRoot = self::normalisePath($docRoot);
+            $docRoot = self::normalisePath($docRoot); // normalise
 
             // Validate document root path
             if (!is_dir($docRoot)) {
@@ -203,7 +207,7 @@ class LmdCrunchCss
             $srcInvalid = []; // capture any missing or invalid (not CSS) files
 
             foreach ($srcFiles as &$srcFile) {
-                $srcFile = '/' . ltrim(self::normalisePath($srcFile), '/'); // normalise + forward slash
+                $srcFile = self::normalisePath($srcFile, true); // normalise + leading slash
                 $absPath = $this->root . $srcFile; // absolute path to file
 
                 $spl = new \SplFileInfo($absPath); // get file information
@@ -245,7 +249,7 @@ class LmdCrunchCss
             /*
              * Output File
              */
-            $outFile = '/' . ltrim(self::normalisePath($outFile), '/'); // normalise + forward slash
+            $outFile = self::normalisePath($outFile, true); // normalise + leading slash
             $absOut = $this->root . $outFile; // absolute path to file
             $pathInfo = pathinfo($absOut); // break into path components
 
@@ -316,7 +320,7 @@ class LmdCrunchCss
         if (!$this->hasError) {
             // Enforce valid minification level
             if (filter_var($level, FILTER_VALIDATE_INT, self::$filterOpts) === false) {
-                $level = self::MINIFY_LEVEL_NONE; // default
+                $level = self::MINIFY_NONE; // default
             }
 
             // Get output CSS content if it exists and is more recent than the source files.
@@ -354,37 +358,7 @@ class LmdCrunchCss
     }
 
     /**
-     * Save output CSS to output file.
-     *
-     * Will only save to file if the source files generated fresh output.
-     *
-     * Returns the output file path (from document root, as provided)
-     *
-     * @param bool $bustCache Add a cache buster to the stylesheet markup (default: false)
-     *
-     * @return string
-     */
-    public function toFile(bool $bustCache = false): string
-    {
-        if ($this->hasError) {
-            return ''; // stop if there was an error
-        }
-
-        // Only save file if source was updated
-        if ($this->updatedCss && $this->outCss !== '') {
-            $this->saveFile($this->outCss);
-            $this->outLastModified = filemtime($this->root . $this->outFile); // update
-            $this->outFileExists = true;
-        }
-
-        if ($this->devMode) {
-            return self::markup($this->srcFiles, $bustCache);
-        }
-        return self::markup([$this->outFile], $bustCache);
-    }
-
-    /**
-     * Return output CSS as a string
+     * Return output CSS without saving it to file
      *
      * @return string
      */
@@ -394,123 +368,37 @@ class LmdCrunchCss
     }
 
     /**
-     * Minify CSS source
+     * Save output CSS to output file.
      *
-     * @param string $css   CSS source to minify
-     * @param int    $level Minificaiton level  (@see `process()` method)
+     * Will only save to file if the source files generated fresh output.
+     *
+     * Returns stylesheet `<link>` markup, the content of which depends on whether
+     * development mode was enabled at set-up or not:
+     * - Enabled: returns the source files, saving the minified file in the background.
+     * - Not enabled: returns the saved minified file (default).
+     *
+     * @param bool $bustCache Add a cache buster to the markup (default: false)
      *
      * @return string
      */
-    public static function minify(string $css, int $level): string
+    public function toFile(bool $bustCache = false): string
     {
-        if (($css = trim($css)) === '') {
-            return ''; // no CSS was provided
+        if ($this->hasError || $this->outCss === '') {
+            return self::$noMinifyMsg; // stop if there was an error or output CSS is empty
         }
 
-        // Validate $level - if param is invalid or MINIFY_LEVEL_NONE, return original string
-        if (
-            filter_var($level, FILTER_VALIDATE_INT, self::$filterOpts) === false
-            || $level === self::MINIFY_LEVEL_NONE
-        ) {
-            return $css . sprintf(self::$minifyToken, self::MINIFY_LEVEL_NONE);
+        // Only save file if source was updated
+        if ($this->updatedCss) {
+            $this->saveFile($this->outCss);
+            $this->outLastModified = filemtime($this->root . $this->outFile); // update
+            $this->outFileExists = true;
         }
 
-        // Variable length space character - only include when $level is low
-        $vs = $level > self::MINIFY_LEVEL_LOW ? '' : ' ';
-
-        // Strip unnecessary stuff
-        $css = preg_replace("/\/\*.*?\*\//s", "", $css); // strip comments
-        $css = preg_replace("/(^|}+)[^{]+{\s*}/s", "\\1", $css); // strip empty rulesets
-        $css = preg_replace("/\R+/su", "", $css); // strip all vertical whitespace
-        $css = preg_replace("/\h+/s", " ", $css); // reduce/normalise horizontal whitespace
-        $css = preg_replace("/ ?(\{|\}|;) ?/s", "\\1", $css); // strip whitespace around braces and semi-colons
-
-        if ($level > self::MINIFY_LEVEL_LOW) {
-            $css = str_replace(";}", "}", $css); // strip semi-colon from before closing brace
-        } else {
-            $css = preg_replace("/(?<!;|\})\}/s", ";}", $css); // insert missing semi-colon before closing brace
+        if ($this->devMode) {
+            return self::getMarkup($this->srcFiles, $bustCache); // source files markup
         }
 
-        // Insert newline after single at-rules
-        $css = preg_replace("/(@(charset|import|namespace)[^;]+;)/s", "\\1\n", $css);
-
-        // Insert newline after closing braces
-        $css = str_replace("}", "}\n", $css);
-
-        // Insert newlines after opening braces of nested rulesets
-        $css = preg_replace("/(?<={)(.+?\{)/m", "\n\\1", $css);
-
-        /***
-         * Iterate over CSS as an array
-         */
-        $lines = explode("\n", trim($css));
-
-        $depth = 0; // nested ruleset depth counter
-        $css = ""; // reset CSS string
-
-        foreach ($lines as $line) {
-            $line = trim($line);
-            $line_beg = substr($line, 0, 1); // first character
-            $line_end = substr($line, -1, 1); // last character
-
-            // If the line starts with a closing brace, we are exiting a nested ruleset
-            if ($line_beg === "}") {
-                $depth--;
-            }
-
-            // Indent string content depends on nested ruleset depth
-            $indent = str_repeat("\t", $depth);
-
-            // Insert indent at medium/low level only
-            $css .= ($level < self::MINIFY_LEVEL_HIGH) ? $indent : "";
-
-            if ($line_end === ";" || $line_beg === "}") {
-                // self-contained line (e.g. @import) or closing brace
-                $css .= $line;
-            } elseif ($line_end === "{") {
-                // opening brace, entering nested ruleset
-                $line = rtrim($line, "{"); // trim opening brace temporarily
-
-                // Normalise spaces around conditionals
-                $line = preg_replace('/\s?(\([^:\s]+)\s*:\s*([^)]+\))\s?/s', " \\1:$vs\\2 ", $line);
-
-                $css .= trim($line) . $vs . "{"; // add opening brace back
-
-                $depth++; // increment indentation
-            } else {
-                // self-contained ruleset
-
-                // Newline/indent ruleset declarations
-                $indent_dec = ($level < self::MINIFY_LEVEL_MEDIUM) ? "\n" . str_repeat("\t", $depth + 1) : "";
-
-                // Get separate parts (selectors {declarations}), minus braces
-                preg_match("/^(?<sels>[^{]+)\{(?<decs>[^}]+)\}$/", $line, $matches);
-
-                if (isset($matches['sels']) && isset($matches['decs'])) {
-                    // Selectors - normalise space around commas
-                    $sels = preg_replace("/\h?,\h?/s", ",$vs", $matches['sels']);
-
-                    // Declarations
-                    // - normalise space around colons and commas
-                    $decs = preg_replace("/\h?([:,])\h?/", "\\1$vs", $matches['decs']);
-                    // - remove space around semi-colons and insert indentation
-                    $decs = preg_replace("/\h?;\h?/s", ";$indent_dec", $decs);
-
-                    // Build ruleset
-                    $css .= trim($sels) . $vs . "{" . $indent_dec . trim($decs)
-                    . (($level < self::MINIFY_LEVEL_MEDIUM) ? "\n" . $indent : "")
-                    . "}";
-                }
-            }
-
-            // Insert newline at medium/low level only
-            $css .= ($level < self::MINIFY_LEVEL_HIGH) ? "\n" : "";
-        }
-
-        // Append minification level (is used to identify level when output file is read)
-        $css .= sprintf(self::$minifyToken, $level);
-
-        return trim($css);
+        return self::getMarkup([$this->outFile], $bustCache); // minified file markup
     }
 
     /**
@@ -550,7 +438,160 @@ class LmdCrunchCss
         }
     }
 
-    private static function markup(array $styles, bool $bustCache = false): string
+    /**
+     * Minify CSS source
+     *
+     * @param string $css   CSS source to minify
+     * @param int    $level Minification level  (@see `process()` method)
+     *
+     * @return string
+     */
+    public static function minify(string $css, int $level): string
+    {
+        if (($css = trim($css)) === '') {
+            return ''; // no CSS was provided
+        }
+
+        // Validate $level - if param is invalid or MINIFY_LEVEL_NONE, return original string
+        if (
+            filter_var($level, FILTER_VALIDATE_INT, self::$filterOpts) === false
+            || $level === self::MINIFY_NONE
+        ) {
+            return $css . "\n" . sprintf(self::$minifyToken, self::MINIFY_NONE);
+        }
+
+        // Variable length space character - only include when $level is low
+        $vs = $level > self::MINIFY_LOW ? '' : ' ';
+
+        // Strip unnecessary stuff
+        $css = preg_replace("/\/\*.*?\*\//s", "", $css); // strip comments
+        $css = preg_replace("/(^|}+)[^{]+{\s*}/s", "\\1", $css); // strip empty rulesets
+        $css = preg_replace("/\R+/su", "", $css); // strip all vertical whitespace
+        $css = preg_replace("/\h+/s", " ", $css); // reduce/normalise horizontal whitespace
+        $css = preg_replace("/ ?(\{|\}|;) ?/s", "\\1", $css); // strip whitespace around braces and semi-colons
+
+        if ($level > self::MINIFY_LOW) {
+            $css = str_replace(";}", "}", $css); // strip semi-colon from before closing brace
+        } else {
+            $css = preg_replace("/(?<!;|\})\}/s", ";}", $css); // insert missing semi-colon before closing brace
+        }
+
+        // Insert newline after single at-rules
+        $css = preg_replace("/(@(charset|import|namespace)[^;]+;)/s", "\\1\n", $css);
+
+        // Insert newline after closing braces
+        $css = str_replace("}", "}\n", $css);
+
+        // Insert newlines after opening braces of nested rulesets
+        $css = preg_replace("/(?<={)(.+?\{)/m", "\n\\1", $css);
+
+        /***
+         * Iterate over CSS as an array
+         */
+        $lines = explode("\n", trim($css));
+
+        $depth = 0; // nested ruleset depth counter
+        $css = ""; // reset CSS string
+
+        foreach ($lines as $line) {
+            $line = trim($line);
+            $line_beg = substr($line, 0, 1); // first character
+            $line_end = substr($line, -1, 1); // last character
+
+            // If the line starts with a closing brace, we are exiting a nested ruleset
+            if ($line_beg === "}") {
+                $depth--;
+            }
+
+            // Indent string content depends on nested ruleset depth
+            $indent = str_repeat("\t", $depth);
+
+            // Insert indent at medium/low level only
+            $css .= ($level < self::MINIFY_HIGH) ? $indent : "";
+
+            if ($line_end === ";" || $line_beg === "}") {
+                // self-contained line (e.g. @import) or closing brace
+                $css .= $line;
+            } elseif ($line_end === "{") {
+                // opening brace, entering nested ruleset
+                $line = rtrim($line, "{"); // trim opening brace temporarily
+
+                // Normalise spaces around conditionals
+                $line = preg_replace('/\s?(\([^:\s]+)\s*:\s*([^)]+\))\s?/s', " \\1:$vs\\2 ", $line);
+
+                $css .= trim($line) . $vs . "{"; // add opening brace back
+
+                $depth++; // increment indentation
+            } else {
+                // self-contained ruleset
+
+                // Newline/indent ruleset declarations
+                $indent_dec = ($level < self::MINIFY_MEDIUM) ? "\n" . str_repeat("\t", $depth + 1) : "";
+
+                // Get separate parts (selectors {declarations}), minus braces
+                preg_match("/^(?<sels>[^{]+)\{(?<decs>[^}]+)\}$/", $line, $matches);
+
+                if (isset($matches['sels']) && isset($matches['decs'])) {
+                    // Selectors - normalise space around commas
+                    $sels = preg_replace("/\h?,\h?/s", ",$vs", $matches['sels']);
+
+                    // Declarations
+                    // - normalise space around colons and commas
+                    $decs = preg_replace("/\h?([:,])\h?/", "\\1$vs", $matches['decs']);
+                    // - remove space around semi-colons and insert indentation
+                    $decs = preg_replace("/\h?;\h?/s", ";$indent_dec", $decs);
+
+                    // Build ruleset
+                    $css .= trim($sels) . $vs . "{" . $indent_dec . trim($decs)
+                    . (($level < self::MINIFY_MEDIUM) ? "\n" . $indent : "")
+                    . "}";
+                }
+            }
+
+            // Insert newline at medium/low level only
+            $css .= ($level < self::MINIFY_HIGH) ? "\n" : "";
+        }
+
+        // Append minification level (is used to identify level when output file is read)
+        $css .= sprintf(self::$minifyToken, $level);
+
+        return trim($css);
+    }
+
+    /**
+     * Normalise path
+     *
+     * - Converts back slash to forward slash.
+     * - Always strips trailing slash.
+     * - Optionally enforces leading slash (default: false, leaves leading slash as provided).
+     *
+     * @param string  $path The path to normalise.
+     * @param bool $enforceLslash Enforce a leading slash (default false, leaves as is).
+     *
+     * @return string
+     */
+    public static function normalisePath(string $path, bool $enforceLslash = false): string
+    {
+        $path = str_replace('\\', '/', $path); // normalise to forward slash
+
+        if ($enforceLslash) {
+            return '/' . trim($path, '/'); // enforce leading slash / strip trailing slash
+        }
+
+        return rtrim($path, '/'); // strip trailing slash only
+    }
+
+    /**
+     * Get Stylesheet Markup
+     *
+     * Returns stylesheet `<link>` markup.
+     *
+     * @param array $styles Stylesheet links (absolute path from document root) to include
+     * @param boolean $bustCache Add a cache buster to links (default: false)
+     *
+     * @return string
+     */
+    protected static function getMarkup(array $styles, bool $bustCache = false): string
     {
         if (count($styles) < 1) {
             return '';
@@ -565,18 +606,6 @@ class LmdCrunchCss
         }
 
         return $out;
-    }
-
-    /**
-     * Normalise path separators - make back slashes into forward slashes
-     *
-     * @param string  $path The path to normalise.
-     *
-     * @return string
-     */
-    private static function normalisePath(string $path): string
-    {
-        return rtrim(str_replace('\\', '/', $path), '/');
     }
 
     /**

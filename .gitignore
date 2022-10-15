@@ -1,8 +1,5 @@
 # Ignore files and folders
 .github
 dev/
-docs/
-.phpcs.xml
-*.log
 *.min.css
 *.tmp
