@@ -1,9 +1,8 @@
-# ignore dev directory
+# Ignore files and folders
+.github
 dev/
-
-# ignore minified file in demo directory
-demo/*.min.css
-
-# ignore log and tmp files
+docs/
+.phpcs.xml
 *.log
+*.min.css
 *.tmp
