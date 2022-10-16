@@ -6,6 +6,29 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+## [3.0.0] - 22-10-16
+
+### Removed
+
+- Removed `$noSave` param from `process()` method
+
+### Added
+
+- Added `getMarkup()` method that renders stylesheet `<link>` markup.
+- Added `$docRoot` (absolute file-system path to document root) param to constructor method.
+- Added `$devMode` (development mode) param to constructor method.
+- Added `$bustCache` (cache buster) param to `toFile()` method (to use with `getMarkup()`)
+
+### Changed:
+
+- Moved `LmdCrunchCss.php` to `src/` folder.
+- Output file names can now start with a dot ".".
+- Path requirement for both source and output files is now the absolute path from the document root (instead of the full file-system path).
+- The `toFile()` method now returns stylesheet `<link>` markup (using `getMarkup()`). 
+- Minification level comment token (files uisng the old token will be reminified).
+- Refactored portions of the code.
+- Rewrote and updated README.
+
 ## [2.0.1] - 22-09-27
 
 ### Fixed
@@ -58,7 +81,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 - Initial release.
 
-[Unreleased]: https://github.com/lmd-code/lmdcrunchcss/compare/v2.0.1...HEAD
+[Unreleased]: https://github.com/lmd-code/lmdcrunchcss/compare/v3.0.0...HEAD
+[3.0.0]: https://github.com/lmd-code/lmdcrunchcss/releases/tag/v3.0.0
 [2.0.1]: https://github.com/lmd-code/lmdcrunchcss/releases/tag/v2.0.1
 [2.0.0]: https://github.com/lmd-code/lmdcrunchcss/releases/tag/v2.0.0
 [1.1.1]: https://github.com/lmd-code/lmdcrunchcss/releases/tag/v1.1.1

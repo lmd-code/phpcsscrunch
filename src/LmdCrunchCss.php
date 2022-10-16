@@ -5,7 +5,7 @@
  * (c) LMD, 2022
  * https://github.com/lmd-code/lmdcrunchcss
  *
- * @version 2.0.1
+ * @version 3.0.0
  * @license MIT
  */
 
