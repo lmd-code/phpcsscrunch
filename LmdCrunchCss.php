@@ -122,12 +122,6 @@ class LmdCrunchCss
     private static $minifyToken = '/*lmdcrunchcss=%d*/';
 
     /**
-     * Minification failed message
-     * @var string
-     */
-    private static $noMinifyMsg = '<!-- ' . __CLASS__ . ': Could not minify files -->';
-
-    /**
      * Valid mime-types for CSS files
      * @var string[]
      */
@@ -377,14 +371,14 @@ class LmdCrunchCss
      * - Enabled: returns the source files, saving the minified file in the background.
      * - Not enabled: returns the saved minified file (default).
      *
-     * @param bool $bustCache Add a cache buster to the markup (default: false)
+     * @param bool $cacheBuster Add a cache buster to the markup (default: false)
      *
      * @return string
      */
-    public function toFile(bool $bustCache = false): string
+    public function toFile(bool $cacheBuster = false): string
     {
         if ($this->hasError || $this->outCss === '') {
-            return self::$noMinifyMsg; // stop if there was an error or output CSS is empty
+            return ''; // stop if there was an error or output CSS is empty
         }
 
         // Only save file if source was updated
@@ -395,10 +389,10 @@ class LmdCrunchCss
         }
 
         if ($this->devMode) {
-            return self::getMarkup($this->srcFiles, $bustCache); // source files markup
+            return $this->getMarkup($this->srcFiles, $cacheBuster); // source files markup
         }
 
-        return self::getMarkup([$this->outFile], $bustCache); // minified file markup
+        return $this->getMarkup([$this->outFile], $cacheBuster); // minified file markup
     }
 
     /**
@@ -436,6 +430,33 @@ class LmdCrunchCss
         } catch (\Exception $e) {
             self::error($e->getMessage(), __METHOD__);
         }
+    }
+
+    /**
+     * Get Stylesheet Markup
+     *
+     * Returns stylesheet `<link>` markup.
+     *
+     * @param array $styles Stylesheet links (absolute path from document root) to include
+     * @param boolean $cacheBuster Add a cache buster to links (default: false)
+     *
+     * @return string
+     */
+    protected function getMarkup(array $styles, bool $cacheBuster = false): string
+    {
+        if (count($styles) < 1) {
+            return '';
+        }
+
+        $bustCache = ($cacheBuster) ? '?t=' . time() : ''; // add a cache buster
+
+        $out = '';
+
+        foreach ($styles as $file) {
+            $out .= '<link href="' . $file . $bustCache . '" rel="stylesheet">' . PHP_EOL;
+        }
+
+        return $out;
     }
 
     /**
@@ -570,7 +591,7 @@ class LmdCrunchCss
      *
      * @return string
      */
-    public static function normalisePath(string $path, bool $enforceLslash = false): string
+    private static function normalisePath(string $path, bool $enforceLslash = false): string
     {
         $path = str_replace('\\', '/', $path); // normalise to forward slash
 
@@ -579,33 +600,6 @@ class LmdCrunchCss
         }
 
         return rtrim($path, '/'); // strip trailing slash only
-    }
-
-    /**
-     * Get Stylesheet Markup
-     *
-     * Returns stylesheet `<link>` markup.
-     *
-     * @param array $styles Stylesheet links (absolute path from document root) to include
-     * @param boolean $bustCache Add a cache buster to links (default: false)
-     *
-     * @return string
-     */
-    protected static function getMarkup(array $styles, bool $bustCache = false): string
-    {
-        if (count($styles) < 1) {
-            return '';
-        }
-
-        $cacheBuster = ($bustCache) ? '?t=' . time() : ''; // add a cache buster
-
-        $out = '';
-
-        foreach ($styles as $file) {
-            $out .= '<link href="' . $file . $cacheBuster . '" rel="stylesheet">' . PHP_EOL;
-        }
-
-        return $out;
     }
 
     /**

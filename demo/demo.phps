@@ -21,10 +21,10 @@
 
 use lmdcode\lmdcrunchcss\LmdCrunchCss;
 
-include '../LmdCrunchCss.php'; // include LmdCrunchCss
+include '../src/LmdCrunchCss.php'; // include LmdCrunchCss
 
 // Path to current directory from document root
-$dirPath = LmdCrunchCss::normalisePath(dirname($_SERVER['PHP_SELF']), true);
+$dirPath = '/' . trim(str_replace('\\', '/', dirname($_SERVER['PHP_SELF'])), '/');
 
 $sourceFiles = [
     $dirPath . '/css-input-1.css',

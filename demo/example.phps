@@ -22,12 +22,12 @@
 
 use lmdcode\lmdcrunchcss\LmdCrunchCss;
 
-include '../LmdCrunchCss.php'; // include LmdCrunchCss
+include '../src/LmdCrunchCss.php'; // include LmdCrunchCss
 
-$devMode = false; // however you determine dev mode
+$devMode = true; // however you determine dev mode
 
 // Path to current directory from document root
-$dirPath = LmdCrunchCss::normalisePath(dirname($_SERVER['PHP_SELF']), true); 
+$dirPath = '/' . trim(str_replace('\\', '/', dirname($_SERVER['PHP_SELF'])), '/');
 
 // Source files
 $sourceFiles = [
