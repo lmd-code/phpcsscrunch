@@ -1,16 +1,14 @@
 <?php
 
 /**
- * LMD Crunch CSS
- * (c) LMD, 2022
- * https://github.com/lmd-code/lmdcrunchcss
+ * LMD Crunch CSS <https://github.com/lmd-code/lmdcrunchcss>
  *
  * This is a demo of the minification capabilities, and not a usage demo.
  * See example.phps for an actual usage demo.
  *
  * You can run this demo from your local copy of LmdCrunchCss
  *
- * 1. Rename the file from 'demo.phps' => 'demo.php'
+ * 1. Rename this file to 'demo.php' (it's just a file extension change).
  *
  * 2. In your browser, go to:
  *    http://host.name/path/to/lmdcrunchcss/demo/demo.php
@@ -20,24 +18,12 @@
  */
 
 use lmdcode\lmdcrunchcss\LmdCrunchCss;
-
-include '../src/LmdCrunchCss.php'; // include LmdCrunchCss
-
-// Path to current directory from document root
+include '../src/LmdCrunchCss.php';
 $dirPath = '/' . trim(str_replace('\\', '/', dirname($_SERVER['PHP_SELF'])), '/');
-
-$sourceFiles = [
-    $dirPath . '/css-input-1.css',
-    $dirPath . '/css-input-2.css',
-    $dirPath . '/css-input-3.css',
-];
-
-$minifiedFile = $dirPath . '/css-output.min.css';
-
+$sourceFiles = [$dirPath . '/input-1.css', $dirPath . '/input-2.css', $dirPath . '/input-3.css',];
+$minifiedFile = $dirPath . '/output.min.css';
 $crunch = new LmdCrunchCss($sourceFiles, $minifiedFile, $_SERVER['DOCUMENT_ROOT']);
-
-// Process CSS with minimum strictness and output to string
-$css = $crunch->process(LmdCrunchCss::MINIFY_NONE)->toString();
+$css = $crunch->process(LmdCrunchCss::MINIFY_NONE)->toString(); // just need the combined CSS
 ?>
 <!DOCTYPE html>
 <html lang="en">

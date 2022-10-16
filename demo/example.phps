@@ -1,15 +1,13 @@
 <?php
 
 /**
- * LMD Crunch CSS
- * (c) LMD, 2022
- * https://github.com/lmd-code/lmdcrunchcss
+ * LMD Crunch CSS <https://github.com/lmd-code/lmdcrunchcss>
  *
  * This is an example/demo of how to use LMD Crunch CSS.
  * 
  * You can run this demo from your local copy of LmdCrunchCss
  *
- * 1. Rename the file from 'example.phps' => 'example.php'
+ * 1. Rename this file to 'example.php' (it's just a file extension change).
  *
  * 2. In your browser, go to:
  *    http://host.name/path/to/lmdcrunchcss/demo/example.php
@@ -22,24 +20,31 @@
 
 use lmdcode\lmdcrunchcss\LmdCrunchCss;
 
-include '../src/LmdCrunchCss.php'; // include LmdCrunchCss
+// Include the class (unless using an autoloader)
+include '../src/LmdCrunchCss.php';
 
-$devMode = true; // however you determine dev mode
-
-// Path to current directory from document root
+// Path to current directory from document root (normalise path)
 $dirPath = '/' . trim(str_replace('\\', '/', dirname($_SERVER['PHP_SELF'])), '/');
 
-// Source files
+/*** Constructor parameter values */
+
+// Source files - will be combined in array order!
 $sourceFiles = [
-    $dirPath . '/css-input-1.css',
-    $dirPath . '/css-input-2.css',
-    $dirPath . '/css-input-3.css',
+    $dirPath . '/input-1.css',
+    $dirPath . '/input-2.css',
+    $dirPath . '/input-3.css',
 ];
 
-// Output file
-$minifiedFile = $dirPath . '/css-output.min.css';
+//  Output file for minified CSS
+$minifiedFile = $dirPath . '/output.min.css';
 
-// Init LmdCrunchCss
+// Development mode - however you determine this
+$devMode = true; // change this to see different outputs
+
+/**
+ * Initialise class with param values
+ * @var LmdCrunchCss $crunch
+ */
 $crunch = new LmdCrunchCss($sourceFiles, $minifiedFile, $_SERVER['DOCUMENT_ROOT'], $devMode);
 ?>
 <!DOCTYPE html>
@@ -47,12 +52,15 @@ $crunch = new LmdCrunchCss($sourceFiles, $minifiedFile, $_SERVER['DOCUMENT_ROOT'
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LMD Crunch CSS Dev Mode Demo</title>
-    <?php echo $crunch->process(LmdCrunchCss::MINIFY_HIGH)->toFile(true); ?>
+    <title>LMD Crunch CSS Example Usage</title>
+    <?php
+        // Maximum minification and output markup with cache buster
+        echo $crunch->process(LmdCrunchCss::MINIFY_HIGH)->toFile(true);
+    ?>
 </head>
 <body id="top">
 <header>
-    <h1>LMD Crunch CSS Dev Mode Demo</h1>
+    <h1>LMD Crunch CSS Example Usage</h1>
 </header>
 <main>
     <p>Make some changes to the style sheets and reload the page. Then change <code class="highlight">$devMode</code> to "false" and reload again. Your changes should be reflected in the generate minified file.</p>

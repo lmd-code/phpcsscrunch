@@ -5,6 +5,7 @@
     <exclude-pattern>docs</exclude-pattern>
     <exclude-pattern>dev/demo.php</exclude-pattern>
     <exclude-pattern>dev/example.php</exclude-pattern>
+    <exclude-pattern>dev/extend-example.php</exclude-pattern>
 
      <rule ref="PSR12"/>
 
