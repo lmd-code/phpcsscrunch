@@ -29,3 +29,8 @@ a:visited
 {
     color: rgb(109, 109, 255);
 }
+
+.highlight
+{
+    background-color: #ffff66;
+}
