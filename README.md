@@ -251,11 +251,13 @@ body{background:black;color:white}p{margin:2rem 0}
 
 ## Advanced
 
-You can modify the stylesheet link markup by extending the class and writing your own `getMarkup()` method.
+You can modify the stylesheet link markup returned by `toFile()` by extending the class and writing your own `getMarkup()` method.
 
-The method must return a string.
+### `getMarkup($styles, $cacheBuster = false)`
 
-### Parameters
+Generates markup from a list of stylesheet files.
+
+**Returns:** *string*.
 
 The method must accept the following two parameters:
 
