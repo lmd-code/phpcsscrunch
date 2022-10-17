@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+## [3.0.1] - 22-10-17
+
+### Fixed
+
+- Minor issues in demo/docs/README
+
 ## [3.0.0] - 22-10-16
 
 ### Removed
@@ -81,7 +87,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 - Initial release.
 
-[Unreleased]: https://github.com/lmd-code/lmdcrunchcss/compare/v3.0.0...HEAD
+[Unreleased]: https://github.com/lmd-code/lmdcrunchcss/compare/v3.0.1...HEAD
+[3.0.1]: https://github.com/lmd-code/lmdcrunchcss/releases/tag/v3.0.1
 [3.0.0]: https://github.com/lmd-code/lmdcrunchcss/releases/tag/v3.0.0
 [2.0.1]: https://github.com/lmd-code/lmdcrunchcss/releases/tag/v2.0.1
 [2.0.0]: https://github.com/lmd-code/lmdcrunchcss/releases/tag/v2.0.0
