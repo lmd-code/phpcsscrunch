@@ -81,8 +81,8 @@ $crunch = new ExtendLmdCrunchCss($sourceFiles, $minifiedFile, $_SERVER['DOCUMENT
 </main> 
 <footer>
     <p>
-        LMD Crunch CSS is licensed under the 
-        <a href="https://github.com/lmd-code/lmdcrunchcss/blob/main/LICENSE">MIT License</a>.
+        LMD Crunch CSS by <a href="https://github.com/lmd-code/">LMD</a><br>
+        Licensed under the <a href="https://github.com/lmd-code/lmdcrunchcss/blob/main/LICENSE">MIT License</a>
     </p>
 </footer>
 </body>
