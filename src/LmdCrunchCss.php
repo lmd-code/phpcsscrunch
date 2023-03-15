@@ -44,7 +44,7 @@ class LmdCrunchCss
     public const MINIFY_HIGH = 3;
 
     /**
-     * An error occured
+     * An error occurred
      * @var boolean
      */
     private $hasError = false;
@@ -92,7 +92,7 @@ class LmdCrunchCss
     private $outLastModified = 0;
 
     /**
-     * Raw/unminfied CSS from combined source files
+     * Raw/unminified CSS from combined source files
      * @var string
      */
     private $rawCss = '';
@@ -335,12 +335,12 @@ class LmdCrunchCss
                 // Get minification level and file hash from file (last line comment)
                 $regex = str_replace(
                     '%d;%s',
-                    '(?<level>\d);(?<chksum>[a-z0-9]*)',
+                    '(?<level>\d);(?<fhash>[a-z0-9]*)',
                     preg_quote(self::$minifyToken, '/')
                 );
                 if (preg_match('/' . $regex . '/', $this->outCss, $match) === 1) {
                     $this->lastMinify = intval($match['level']);
-                    $this->lastFileHash = strval($match['chksum']);
+                    $this->lastFileHash = strval($match['fhash']);
                 }
             }
 
