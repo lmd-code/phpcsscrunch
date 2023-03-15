@@ -1,5 +1,16 @@
 # Changelog
 
+## [3.0.2] - 23-03-15
+
+### Changed
+
+- *Non-breaking change.* Static `minify()` method will no longer append the minification level/file hash comment token when used independently on CSS strings (where it is not needed anyway).
+
+### Fixed
+
+- Adding/removing source files now triggers minified output file regeneration by adding a file hash to the output file comment token along with the minification level. Files using the old token will be reminified.
+- Various typos.
+
 ## [3.0.1] - 22-10-17
 
 ### Fixed
@@ -8,7 +19,7 @@
 
 ## [3.0.0] - 22-10-16
 
-### Changed:
+### Changed
 
 - Moved `LmdCrunchCss.php` to `src/` folder.
 - Changed output file names to now allow a dot (".") as the first character.
@@ -45,7 +56,7 @@
 
 ### Added
 
-- Added minification level 0 (none) `MINIFY_LEVEL_NONE`, which combines source files without minfication.
+- Added minification level 0 (none) `MINIFY_LEVEL_NONE`, which combines source files without minification.
 - Added method `toFile()` which saves output file and returns filename.
 - Added method `toString()` which returns minified CSS string.
 - Added minification level to minified output as an appended comment.
@@ -71,6 +82,7 @@
 
 *First release.*
 
+[3.0.2]: https://github.com/lmd-code/lmdcrunchcss/releases/tag/v3.0.2
 [3.0.1]: https://github.com/lmd-code/lmdcrunchcss/releases/tag/v3.0.1
 [3.0.0]: https://github.com/lmd-code/lmdcrunchcss/releases/tag/v3.0.0
 [2.0.1]: https://github.com/lmd-code/lmdcrunchcss/releases/tag/v2.0.1
