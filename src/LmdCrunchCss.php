@@ -5,7 +5,7 @@
  * (c) LMD, 2022
  * https://github.com/lmd-code/lmdcrunchcss
  *
- * @version 3.0.1
+ * @version 3.0.2
  * @license MIT
  */
 
@@ -116,10 +116,16 @@ class LmdCrunchCss
     private $lastMinify = -1; // -1 if not yet applied to allow for level 0
 
     /**
+     * The last hash of all input and output files
+     * @var string
+     */
+    private $lastFileHash = ''; // md5 of file paths
+
+    /**
      * Minification level string token added to CSS files
      * @var string
      */
-    private static $minifyToken = '/*lmdcrunchcss=%d*/';
+    private static $minifyToken = '/*lmdcrunchcss=%d;%s*/';
 
     /**
      * Valid mime-types for CSS files
@@ -292,6 +298,7 @@ class LmdCrunchCss
      * Only processes files if:
      * - No source files have been processed and no output file has been saved.
      * - The most recently modified source file is fresher than the saved output file.
+     * - The file hash of input/output files has changed (by adding, removing, renaming files).
      * - If `$level` is different to the last applied minification level.
      * - If `$force` is `true`.
      *
@@ -317,20 +324,31 @@ class LmdCrunchCss
                 $level = self::MINIFY_NONE; // default
             }
 
-            // Get output CSS content if it exists and is more recent than the source files.
+            $staleOutput = ($this->outLastModified < $this->srcLastModified);
+            $fileHash = md5(implode('', $this->srcFiles) . $this->outFile);
+
+            // Get output CSS content if it exists.
             // We do this here instead of in the constructor method in case a file is saved
             // before a call to process() -- e.g. for output at different minification levels.
-            if ($this->outFileExists && $this->outLastModified > $this->srcLastModified) {
+            if ($this->outFileExists) {
                 $this->outCss = $this->readFile($this->outFile);
                 // Get minification level from file (last line comment)
-                $regex = str_replace('%d', '(?<level>\d)', preg_quote(self::$minifyToken, '/'));
+                $regex = str_replace(
+                    '%d;%s',
+                    '(?<level>\d);(?<chksum>[a-z0-9]*)',
+                    preg_quote(self::$minifyToken, '/')
+                );
                 if (preg_match('/' . $regex . '/', $this->outCss, $match) === 1) {
                     $this->lastMinify = intval($match['level']);
+                    $this->lastFileHash = strval($match['chksum']);
                 }
             }
 
             // Determine whether to run the minification process
-            if ($force || $this->outCss === '' || $level !== $this->lastMinify) {
+            if (
+                $force || $this->outCss === '' || $staleOutput || $level !== $this->lastMinify
+                || $fileHash !== $this->lastFileHash
+            ) {
                 // We only need to read the source files if we haven't already done so
                 if ($this->rawCss === '') {
                     $combinedCSS = "";
@@ -341,12 +359,13 @@ class LmdCrunchCss
                     $this->rawCss = $combinedCSS;
                 }
 
-                $this->outCss = self::minify($this->rawCss, $level);
+                $this->outCss = self::minify($this->rawCss, $level, $fileHash);
                 $this->updatedCss = true;
             }
         }
 
         $this->lastMinify = $level;
+        $this->lastFileHash = $fileHash;
 
         return $this;
     }
@@ -462,12 +481,13 @@ class LmdCrunchCss
     /**
      * Minify CSS source
      *
-     * @param string $css   CSS source to minify
-     * @param int    $level Minification level  (@see `process()` method)
+     * @param string $css       CSS source to minify
+     * @param int    $level     Minification level  (@see `process()` method)
+     * @param string $fileHash  Hash of all input and output file paths (@see `process()` method)
      *
      * @return string
      */
-    public static function minify(string $css, int $level): string
+    public static function minify(string $css, int $level, string $fileHash = ''): string
     {
         if (($css = trim($css)) === '') {
             return ''; // no CSS was provided
@@ -478,7 +498,7 @@ class LmdCrunchCss
             filter_var($level, FILTER_VALIDATE_INT, self::$filterOpts) === false
             || $level === self::MINIFY_NONE
         ) {
-            return $css . "\n" . sprintf(self::$minifyToken, self::MINIFY_NONE);
+            return $css . "\n" . sprintf(self::$minifyToken, self::MINIFY_NONE, $fileHash);
         }
 
         // Variable length space character - only include when $level is low
@@ -573,8 +593,8 @@ class LmdCrunchCss
             $css .= ($level < self::MINIFY_HIGH) ? "\n" : "";
         }
 
-        // Append minification level (is used to identify level when output file is read)
-        $css .= sprintf(self::$minifyToken, $level);
+        // Append minification level and file hash (used to identify changes when processed again)
+        $css .= sprintf(self::$minifyToken, $level, $fileHash);
 
         return trim($css);
     }
