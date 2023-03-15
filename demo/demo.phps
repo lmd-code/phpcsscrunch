@@ -18,7 +18,9 @@
  */
 
 use lmdcode\lmdcrunchcss\LmdCrunchCss;
+
 include '../src/LmdCrunchCss.php';
+
 $dirPath = '/' . trim(str_replace('\\', '/', dirname($_SERVER['PHP_SELF'])), '/');
 $sourceFiles = [$dirPath . '/input-1.css', $dirPath . '/input-2.css', $dirPath . '/input-3.css',];
 $minifiedFile = $dirPath . '/output.min.css';
@@ -31,7 +33,7 @@ $css = $crunch->process(LmdCrunchCss::MINIFY_NONE)->toString(); // just need the
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>LMD Crunch CSS Demo</title>
-    <style type="text/css"><?php // Minfiy actual CSS for this demo page inline
+    <style type="text/css"><?php // Minify actual CSS for this demo page inline
 echo LmdCrunchCss::minify(
     "html, *, ::before, ::after {
         box-sizing: border-box;

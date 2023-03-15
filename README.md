@@ -173,7 +173,7 @@ The method accepts one parameter.
 
 #### `$cacheBuster` *&lt;boolean&gt;* - *optional*
 
-Add a cache buster (a timestsamp) to the markup. Defaults to false.
+Add a cache buster (a timestamp) to the markup. Defaults to false.
 
 #### Example 4.1: `$devMode` not enabled (default)
 
