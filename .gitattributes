@@ -6,6 +6,8 @@
 docs           export-ignore
 *.min.css      export-ignore
 *.xml          export-ignore
+*.json         export-ignore
+*.lock         export-ignore
 
 # Exclude from diffs
 .github        linguist-generated
@@ -16,9 +18,13 @@ demo/*         linguist-generated
 docs/*         linguist-generated
 CHANGELOG.md   linguist-generated
 *.xml          linguist-generated
+*.json         linguist-generated
+*.lock         linguist-generated
 
 # Exclude from language stats
 demo/* linguist-vendored
 docs/* linguist-vendored
 *.md   linguist-vendored
 *.xml  linguist-vendored
+*.json linguist-vendored
+*.lock linguist-vendored

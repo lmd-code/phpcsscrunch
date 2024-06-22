@@ -1,6 +1,9 @@
 # Ignore files and folders
 .github/
 .vscode/
-dev/
+.dev/
+vendor/
 *.min.css
 *.tmp
+*.json
+*.lock
