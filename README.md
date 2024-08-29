@@ -277,6 +277,6 @@ An example class extension, along with an example usage, is provided in `demo/Ex
 
 A demonstration of the different minification levels is available.
 
-<https://lmd-code.github.io/PhpCssCruncher/>
+<https://lmd-code.github.io/phpcsscrunch/>
 
 The code that generated the demo is provided in `demo/demo.phps`, which can be run once CSS Cruncher is installed.
