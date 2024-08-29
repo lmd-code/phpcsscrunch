@@ -1,28 +1,28 @@
 <?php
 
 /**
- * LMD Crunch CSS <https://github.com/lmd-code/lmdcrunchcss>
+ * PHP CSS Crunch <https://github.com/lmd-code/phpcsscrunch>
  *
- * This is an example/demo of the ExtendLmdCrunchCss class.
+ * This is an example/demo of the ExtendPhpCssCrunch class.
  *
- * You can run this demo from your local copy of LmdCrunchCss
+ * You can run this demo from your local copy of PhpCssCrunch
  *
  * 1. Rename this file to 'extend-example.php' (it's just a file extension change).
  * 
- * 2. Rename the file 'ExtendLmdCrunchCss.phps' to 'ExtendLmdCrunchCss.php'.
+ * 2. Rename the file 'ExtendPhpCssCrunch.phps' to 'ExtendPhpCssCrunch.php'.
  *
  * 3. In your browser, go to:
- *    http://host.name/path/to/lmdcrunchcss/demo/extend-example.php
+ *    http://host.name/path/to/phpcsscrunch/demo/extend-example.php
  *
  *    For example, in a dev environment:
- *    http://project.locahost/vendor/lmdcrunchcss/demo/extend-example.php
+ *    http://project.locahost/vendor/phpcsscrunch/demo/extend-example.php
  */
 
-use lmdcode\lmdcrunchcss\ExtendLmdCrunchCss;
+use lmdcode\phpcsscrunch\ExtendPhpCssCrunch;
 
 // Include the classes (unless using an autoloader)
-include '../src/LmdCrunchCss.php'; //  original LmdCrunchCss class
-include 'ExtendLmdCrunchCss.php'; // ExtendLmdCrunchCss class
+include '../src/PhpCssCrunch.php'; //  original PhpCssCrunch class
+include 'ExtendPhpCssCrunch.php'; // ExtendPhpCssCrunch class
 
 // Path to current directory from document root (normalise path)
 $dirPath = '/' . trim(str_replace('\\', '/', dirname($_SERVER['PHP_SELF'])), '/');
@@ -44,16 +44,16 @@ $devMode = true; // change this to see different outputs
 
 /**
  * Initialise class with param values
- * @var ExtendLmdCrunchCss $crunch
+ * @var ExtendPhpCssCrunch $crunch
  */
-$crunch = new ExtendLmdCrunchCss($sourceFiles, $minifiedFile, $_SERVER['DOCUMENT_ROOT'], $devMode);
+$crunch = new ExtendPhpCssCrunch($sourceFiles, $minifiedFile, $_SERVER['DOCUMENT_ROOT'], $devMode);
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LMD Crunch CSS Class Extension</title>
+    <title>PHP CSS Crunch Class Extension</title>
     <style type="text/css">
         html,*,::before,::after{box-sizing:border-box}
         html{line-height:1.4;font-size:16px;font-size-adjust:0.5;font-weight:400;text-size-adjust:none}
@@ -68,21 +68,21 @@ $crunch = new ExtendLmdCrunchCss($sourceFiles, $minifiedFile, $_SERVER['DOCUMENT
 </head>
 <body id="top">
 <header>
-    <h1>LMD Crunch CSS Class Extension</h1>
+    <h1>PHP CSS Crunch Class Extension</h1>
 </header>
 <main>
     <p>Example of a class extension to modify the output of the <code>getMarkup()</code> method.</p>
     
     <h2><label for="cssout1">Markup</label></h2>
     <p><textarea id="cssout1" cols="80" rows="6"><?php
-        echo $crunch->process(ExtendLmdCrunchCss::MINIFY_HIGH)->toFile();
+        echo $crunch->process(ExtendPhpCssCrunch::MINIFY_HIGH)->toFile();
     ?></textarea></p>
 
 </main> 
 <footer>
     <p>
-        LMD Crunch CSS by <a href="https://github.com/lmd-code/">LMD</a><br>
-        Licensed under the <a href="https://github.com/lmd-code/lmdcrunchcss/blob/main/LICENSE">MIT License</a>
+        PHP CSS Crunch by <a href="https://github.com/lmd-code/">LMD-Code</a><br>
+        Licensed under the <a href="https://github.com/lmd-code/phpcsscrunch/blob/main/LICENSE">MIT License</a>
     </p>
 </footer>
 </body>

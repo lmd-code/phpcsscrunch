@@ -1,19 +1,19 @@
 <?php
 
 /**
- * LMD Crunch CSS
- * (c) LMD, 2022
- * https://github.com/lmd-code/lmdcrunchcss
+ * PHP CSS Crunch
+ * (c) LMD-Code, 2022-2024
+ * https://github.com/lmd-code/phpcsscrunch
  */
 
 declare(strict_types=1);
 
-namespace lmdcode\lmdcrunchcss;
+namespace lmdcode\phpcsscrunch;
 
 /**
- * Example of a class that extends LmdCrunchCss
+ * Example of a class that extends PhpCssCrunch
  */
-class ExtendLmdCrunchCss extends LmdCrunchCss
+class ExtendPhpCssCrunch extends PhpCssCrunch
 {
     /**
      * {@inheritDoc}
@@ -41,8 +41,8 @@ class ExtendLmdCrunchCss extends LmdCrunchCss
     /**
      * Get an ID from a filename
      *
-     * This is a very basic id generator that does not take into account spaces in filenames,
-     * or any other special character other than '.'.
+     * This is a very basic id generator just to give a general idea, it does not take into
+     * account spaces in filenames or any other special character other than '.'.
      *
      * @param string $file The filepath/filename
      *

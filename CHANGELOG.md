@@ -1,5 +1,15 @@
 # Changelog
 
+## [4.0.0] - 24-08-29
+
+*This release contains breaking changes from previous releases.*
+
+### Changed
+
+- Renamed repo to "PHP CSS Crunch"
+- Renamed class file/name to `PhpCssCrunch.php` (`PhpCssCrunch()`)
+- Updated namespace to reflect name change.
+
 ## [3.0.2] - 23-03-15
 
 ### Changed

@@ -1,27 +1,27 @@
 <?php
 
 /**
- * LMD Crunch CSS
- * (c) LMD, 2022
- * https://github.com/lmd-code/lmdcrunchcss
+ * PHP CSS Crunch
+ * (c) LMD-Code, 2022-2024
+ * https://github.com/lmd-code/phpcsscrunch
  *
- * @version 3.0.2
+ * @version 4.0.0
  * @license MIT
  */
 
 declare(strict_types=1);
 
-namespace lmdcode\lmdcrunchcss;
+namespace lmdcode\phpcsscrunch;
 
 /**
- * LMD Crunch CSS
+ * PHP CSS Crunch
  *
  * Take an array of source files and combine them into a single minified CSS file with an
  * optional minification level.
  *
  * The source CSS must be properly formatted.
  */
-class LmdCrunchCss
+class PhpCssCrunch
 {
     /**
      * No minification (only combines source files)
@@ -125,7 +125,7 @@ class LmdCrunchCss
      * Minification level string token added to CSS files
      * @var string
      */
-    private static $minifyToken = '/*lmdcrunchcss=%d;%s*/';
+    private static $minifyToken = '/*phpcsscrunch=%d;%s*/';
 
     /**
      * Valid mime-types for CSS files
