@@ -1,6 +1,12 @@
 # Changelog
 
-## [4.0.0] - 24-08-29
+## [4.0.1] - 2024-09-02
+
+### Fixed
+
+- Fixed README to reference correct repo/class/etc name "PHP CSS Crunch"
+
+## [4.0.0] - 2024-08-29
 
 *This release contains breaking changes from previous releases.*
 
@@ -10,7 +16,7 @@
 - Renamed class file/name to `PhpCssCrunch.php` (`PhpCssCrunch()`)
 - Updated namespace to reflect name change.
 
-## [3.0.2] - 23-03-15
+## [3.0.2] - 2023-03-15
 
 ### Changed
 
@@ -21,13 +27,13 @@
 - Adding/removing source files now triggers minified output file regeneration by adding a file hash to the output file comment token along with the minification level. Files using the old token will be reminified.
 - Various typos.
 
-## [3.0.1] - 22-10-17
+## [3.0.1] - 2022-10-17
 
 ### Fixed
 
 - Fixed minor issues in demo/docs/README.
 
-## [3.0.0] - 22-10-16
+## [3.0.0] - 2022-10-16
 
 ### Changed
 
@@ -48,13 +54,13 @@
 
 - Removed `$noSave` param from `process()` method.
 
-## [2.0.1] - 22-09-27
+## [2.0.1] - 2022-09-27
 
 ### Fixed
 
 - Fixed the `minify()` method, it no longer returns errors if `$css` param is empty.
 
-## [2.0.0] - 22-09-21
+## [2.0.0] - 2022-09-21
 
 *This release contains breaking changes from previous releases.*
 
@@ -71,7 +77,7 @@
 - Added method `toString()` which returns minified CSS string.
 - Added minification level to minified output as an appended comment.
 
-## [1.1.1] - 22-09-20
+## [1.1.1] - 2022-09-20
 
 ### Changed
 
@@ -81,7 +87,7 @@
 
 - Added demo code.
 
-## [1.1.0] - 22-09-18
+## [1.1.0] - 2022-09-18
 
 ### Changed
 
@@ -92,6 +98,8 @@
 
 *First release.*
 
+[4.0.1]: https://github.com/lmd-code/lmdcrunchcss/releases/tag/v4.0.1
+[4.0.0]: https://github.com/lmd-code/lmdcrunchcss/releases/tag/v4.0.0
 [3.0.2]: https://github.com/lmd-code/lmdcrunchcss/releases/tag/v3.0.2
 [3.0.1]: https://github.com/lmd-code/lmdcrunchcss/releases/tag/v3.0.1
 [3.0.0]: https://github.com/lmd-code/lmdcrunchcss/releases/tag/v3.0.0
