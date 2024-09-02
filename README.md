@@ -1,10 +1,10 @@
-# PHP CSS Cruncher
+# PHP CSS Crunch
 
 Take an array of source files and combine them into a single minified CSS file *on-the-fly* with an optional level of "crunch" (minification).
 
 ## How does it work?
 
-Include the `PhpCssCruncher` code somewhere in your header (before HTML output) and tell it what your source files are and what the output file is.
+Include the `PhpCssCrunch` code somewhere in your header (before HTML output) and tell it what your source files are and what the output file is.
 
 Add an output method to your template (inline CSS or stylesheet &lt;link&gt; markup).
 
@@ -22,7 +22,7 @@ Then, when make a change in one of your source files and reload the page, it wil
 
 **Minimum PHP Version:** 7.4
 
-1. Download the latest release and unpack the `PhpCssCruncher` folder to you dev project.
+1. Download the latest release and unpack the `PhpCssCrunch` folder to you dev project.
 2. Include the necessary code somewhere before your site content (or at least your stylesheet) outputs to screen. (see [Initialise](#initialise))
 3. Output the result of the minification to your template, either as a link to a minified file, or directly as inline CSS (see [Methods](#methods)).
 
@@ -30,7 +30,7 @@ For a fully working example, see the `demo/example.phps` file.
 
 ## Initialise
 
-### `new PhpCssCruncher($srcFiles, $outFile, $docRoot, $devMode = false)`
+### `new PhpCssCrunch($srcFiles, $outFile, $docRoot, $devMode = false)`
 
 The class has three required parameters and one optional parameter.
 
@@ -67,10 +67,10 @@ Enable development mode. Defaults to `false`.
 **Note:** Setup variables used in this example will be used in all method examples.
 
 ```php
-use lmdcode\PhpCssCruncher\PhpCssCruncher;
+use lmdcode\PhpCssCrunch\PhpCssCrunch;
 
 // Include the class (unless using an autoloader)
-include '/path/to/vendor/PhpCssCruncher/src/PhpCssCruncher.php';
+include '/path/to/vendor/PhpCssCrunch/src/PhpCssCrunch.php';
 
 /*** Constructor parameter values */
 
@@ -85,9 +85,9 @@ $devMode = false; // if never using devMode, you can omit this param
 
 /**
  * Initialise class with param values
- * @var PhpCssCruncher $crunch
+ * @var PhpCssCrunch $crunch
  */
-$crunch = new PhpCssCruncher($sourceFiles, $outputFile, $_SERVER['DOCUMENT_ROOT'], $devMode);
+$crunch = new PhpCssCrunch($sourceFiles, $outputFile, $_SERVER['DOCUMENT_ROOT'], $devMode);
 ```
 
 ## Methods
@@ -125,7 +125,7 @@ Defaults to `false`.
 #### Example 2
 
 ```php
-$crunch->process(PhpCssCruncher::MINIFY_HIGH, true);
+$crunch->process(PhpCssCrunch::MINIFY_HIGH, true);
 
 // -- or --
 
@@ -146,12 +146,12 @@ Calling `toString()` before any `process()` method has been run results in a bla
 
 ```php
 // Process CSS
-$crunch->process(PhpCssCruncher::MINIFY_HIGH);
+$crunch->process(PhpCssCrunch::MINIFY_HIGH);
 
 $css1 = $crunch->toString(); // return result of process()
 
 // Chained method (note, each call to 'process' replaces any previous call)
-$css2 = $crunch->process(PhpCssCruncher::MINIFY_LOW)->toString();
+$css2 = $crunch->process(PhpCssCrunch::MINIFY_LOW)->toString();
 ```
 
 ### `toFile($cacheBuster = false)`
@@ -179,9 +179,9 @@ Add a cache buster (a timestamp) to the markup. Defaults to false.
 
 ```php
 // No $devMode param set (false by default)
-$crunchLive = new PhpCssCruncher($sourceFiles, $outputFile, $_SERVER['DOCUMENT_ROOT']);
+$crunchLive = new PhpCssCrunch($sourceFiles, $outputFile, $_SERVER['DOCUMENT_ROOT']);
 
-$outputLive = $crunch->process(PhpCssCruncher::MINIFY_HIGH)->toFile(true); // cache buster enabled
+$outputLive = $crunch->process(PhpCssCrunch::MINIFY_HIGH)->toFile(true); // cache buster enabled
 ```
 
 Returns markup (*"t=000..." is the cache buster*):
@@ -194,9 +194,9 @@ Returns markup (*"t=000..." is the cache buster*):
 
 ```php
  // $devMode param set to true
-$crunchDev = new PhpCssCruncher($sourceFiles, $outputFile, $_SERVER['DOCUMENT_ROOT'], true);
+$crunchDev = new PhpCssCrunch($sourceFiles, $outputFile, $_SERVER['DOCUMENT_ROOT'], true);
 
-$outputDev = $crunch->process(PhpCssCruncher::MINIFY_HIGH)->toFile(); // no cache buster
+$outputDev = $crunch->process(PhpCssCrunch::MINIFY_HIGH)->toFile(); // no cache buster
 ```
 
 Returns markup:
@@ -240,7 +240,7 @@ $css = "
   }
 ";
 
-echo PhpCssCruncher::minify($css, PhpCssCruncher::MINIFY_HIGH);
+echo PhpCssCrunch::minify($css, PhpCssCrunch::MINIFY_HIGH);
 ```
 
 Results in:
@@ -271,7 +271,7 @@ Whether to add a cache buster to the output.
 
 ### Example extended class
 
-An example class extension, along with an example usage, is provided in `demo/ExtendPhpCssCruncher.phps` and `demo/extend-example.phps`.
+An example class extension, along with an example usage, is provided in `demo/ExtendPhpCssCrunch.phps` and `demo/extend-example.phps`.
 
 ## Demo
 
@@ -279,4 +279,4 @@ A demonstration of the different minification levels is available.
 
 <https://lmd-code.github.io/phpcsscrunch/>
 
-The code that generated the demo is provided in `demo/demo.phps`, which can be run once CSS Cruncher is installed.
+The code that generated the demo is provided in `demo/demo.phps`, which can be run once CSS Crunch is installed.
