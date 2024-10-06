@@ -5,5 +5,3 @@
 /vendor
 *.min.css
 *.tmp
-*.json
-*.lock
