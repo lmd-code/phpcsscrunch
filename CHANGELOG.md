@@ -1,5 +1,11 @@
 # Changelog
 
+## [4.0.2] - 2024-10-06
+
+### Added
+
+- Added `composer.json` file.
+
 ## [4.0.1] - 2024-09-02
 
 ### Fixed
@@ -98,6 +104,7 @@
 
 *First release.*
 
+[4.0.2]: https://github.com/lmd-code/lmdcrunchcss/releases/tag/v4.0.2
 [4.0.1]: https://github.com/lmd-code/lmdcrunchcss/releases/tag/v4.0.1
 [4.0.0]: https://github.com/lmd-code/lmdcrunchcss/releases/tag/v4.0.0
 [3.0.2]: https://github.com/lmd-code/lmdcrunchcss/releases/tag/v3.0.2
